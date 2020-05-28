@@ -5,17 +5,27 @@ EECS441 MVP for MBark - a chrome extension that helps UofM COE undergrads manage
 
 1. Download and setup git from https://git-scm.com/
 2. Open **cmd.exe** and run: 
-     ```batch 
-        git clone "https://github.com/samrg123/MBark.git" "[DESTINATION_FOLDER_NAME]" 
-     ```
+    ```batch 
+        git clone "[USERNAME]:[PASSWORD]@https://github.com/samrg123/MBark.git" "[DESTINATION_FOLDER_NAME]" 
+    ```
+
+    > <pre>
+    > Note: You may need to escape special characters in your username/password or use single quotes instead of double
+    > </pre>
+
 3. Navigate to **[DESTINATION_FOLDER_NAME]** with:
     ```batch
         cd "[DESTINATION_FOLDER_NAME]"
+    ```
+4. Set git name with:
+    ```batch
+        git config user.name "[NAME]"
     ```
 4. Set git email with:
     ```batch
         git config user.email "[EMAIL_ADDRESS]"
     ```
+
 5. [OPTIONAL] - Setup for large files Set up **git lfs** with:
     ```batch
         git lfs install
