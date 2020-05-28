@@ -1,0 +1,37 @@
+  {
+	"manifest_version": 2,
+	"name": "MBark",
+	"version": "1.0",
+	"author": "SOS",
+	"description": "A chrome extension that helps UofM COE undergrads manage there graduation requirements",
+	
+	// Shown in webstore	
+	// "icons": { 
+	// 	"16": "icon16.png",
+	// 	"48": "icon48.png",
+	// 	"128": "icon128.png" 	//This one should be specified!!
+	// },
+
+	"permissions": [
+		"*://*.umich.edu/*",
+		"storage"
+	],
+
+	"browser_action": {
+		
+		// Shown in toolbar
+		// "default_icon": {
+		// 	"16": "images/icon16.png",
+		// 	"24": "images/icon24.png",
+		// 	"32": "images/icon32.png"
+		// },
+
+	  "default_title": "Manage Credits and Courses", //shown in tooltip
+	  "default_popup": "popup/mBarkPopup.html"
+	},
+
+	"background": {
+		"scripts": ["background/mBarkBackground.js"],
+		"persistent": false
+	  }
+  }

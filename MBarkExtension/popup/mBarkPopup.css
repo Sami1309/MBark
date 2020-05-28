@@ -1,0 +1,24 @@
+
+.wrapper {
+	width: max-content;
+    height: max-content;
+    text-align: center;
+}
+
+.banner {
+	color: darkblue;
+    font-size: 1.5em;
+    min-width: max-content;
+}
+
+#creditTable {
+	text-align: center;
+}
+
+#creditTable tr > * {
+    padding: 0 5px;
+}
+
+#creditTable tr td:first-child {
+	text-align: left;
+}

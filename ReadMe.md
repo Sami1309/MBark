@@ -8,11 +8,7 @@ EECS441 MVP for MBark - a chrome extension that helps UofM COE undergrads manage
     ```batch 
         git clone "https://[USERNAME]:[PASSWORD]@github.com/samrg123/MBark.git" "[DESTINATION_FOLDER_NAME]" 
     ```
-
-    > <pre>
-    > Note: You may need to escape special characters in your username/password or use single quotes instead of double
-    > </pre>
-
+    > <pre>Note: You may need to escape special characters in your username/password or use single quotes instead of double quotes</pre>
 3. Navigate to **[DESTINATION_FOLDER_NAME]** with:
     ```batch
         cd "[DESTINATION_FOLDER_NAME]"
