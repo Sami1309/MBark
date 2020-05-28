@@ -9,7 +9,8 @@ EECS441 MVP for MBark - a chrome extension that helps UofM COE undergrads manage
         git clone "https://[USERNAME]:[PASSWORD]@github.com/samrg123/MBark.git" "[DESTINATION_FOLDER_NAME]" 
     ```
     > <pre>
-    > Note: You may need to escape special characters in your <b>[USERNAME]</b> and <b>[PASSWORD]</b> or use single quotes instead of double quotes
+    > Note: You may need to escape special characters in your <b>[USERNAME]</b> and <b>[PASSWORD]</b>
+    >       or use single quotes instead of double quotes
     > </pre>
 3. Navigate to **[DESTINATION_FOLDER_NAME]** with:
     ```batch
@@ -70,6 +71,7 @@ EECS441 MVP for MBark - a chrome extension that helps UofM COE undergrads manage
     ![](images/ReadmeImages/InstallExtension/5.png)    
     > <pre>
     > Note: You'll get an annoying <i><b>"Disable developer mode extensions"</b></i> warning every time you start chrome
-    >       You cannot disable this (there used to be an old way via group policy, but google removed it because of malware concerns)
+    >       You cannot disable this. There used to be an old way via group policy, 
+    >       but google removed it because of malware concerns.
     >       If its really bothering you can install <a href='https://www.google.com/chrome/canary/'>Chrome Canary</a>
     > </pre>
