@@ -22,3 +22,7 @@
 #creditTable tr td:first-child {
 	text-align: left;
 }
+
+.reqCourse {
+	cursor: pointer;
+}
