@@ -1,0 +1,17 @@
+
+
+//Ozan
+- Get class prerequirements for clicked on courses
+- Create way to query the LSA course guide
+
+//Sam 
+- Parse pdfs as html
+- Get a list of completed courses
+- Build UI that changes when some clicks on a course
+X Setup persistent storage for global variables
+
+//Sam I
+- Get a list of required courses
+- Make a list of Electives
+- check if course is open/closed
+- create a list of all the sections that are open
