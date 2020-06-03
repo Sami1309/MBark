@@ -95,12 +95,15 @@ function InitLSASearch() {
 		registerCourseElemt.addEventListener("click", function(e) {
 			
 			var clickedCourseName = e.target.innerText;
-			clickedCourseName = clickedCourseName.replace(/ /g,'');
+			var str = clickedCourseName.split(" ");
+			//clickedCourseName = clickedCourseName.replace(/ /g,'');
 			log("Requesting info for: "+clickedCourseName);
 
 			// send out webrequest
-			var url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?content=2310"+clickedCourseName+"001",
+			var url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&show=1&department=" + str[0] + "&catalog=" + str[1],
 				xhttp = new XMLHttpRequest();
+
+			var lnk = "";
 
 			xhttp.onreadystatechange = function() {
 				if(this.readyState == XMLHttpRequest.DONE) {
@@ -112,13 +115,19 @@ function InitLSASearch() {
 						var responseDocument = document.implementation.createHTMLDocument("responeDocument");
 						responseDocument.write(this.responseText);
 
-
 						// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
-						var elmt = responseDocument.getElementById("contentMain_lblEnfPre");
-						//var str = elmt.innerText;
-						//str = str.replace(/ /g,'');
-						log(elmt);
-						//log(str);
+						//var elmt = responseDocument.getElementsByTagName("a");
+						var elmt = responseDocument.links;
+						for (i = 0; i < elmt.length; i++) {
+							//log(elmt[i].href);
+							if (((elmt[i].href).search(str[0]+str[1])) != -1) {
+								lnk = elmt[i].href
+							}
+						}
+
+						xhttp.abort();
+						
+						Next();
 
 					} else {
 						log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
@@ -127,6 +136,41 @@ function InitLSASearch() {
 			};
 			xhttp.open("GET", url, true);
 			xhttp.send();
+
+			function Next() {
+            	lnk = lnk.split("?");
+			// send out webrequest
+			//url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?content=2310"+clickedCourseName+"001",
+				//xhttp = new XMLHttpRequest();
+				url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?"+lnk[lnk.length-1],
+					xhttp = new XMLHttpRequest();
+
+				xhttp.onreadystatechange = function() {
+					if(this.readyState == XMLHttpRequest.DONE) {
+					
+					// request succeeded
+						if(this.status == 200) {
+						
+						// parse the http response into a separate document 
+							var responseDocument = document.implementation.createHTMLDocument("responeDocument");
+							responseDocument.write(this.responseText);
+
+
+						// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
+							var elmt = responseDocument.getElementById("contentMain_lblEnfPre");
+						//var str = elmt.innerText;
+						//str = str.replace(/ /g,'');
+							log(elmt.innerText);
+						//log(str);
+
+						} else {
+							log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
+						}
+					}
+				};
+				xhttp.open("GET", url, true);
+				xhttp.send();
+            }
 
 		});
 
