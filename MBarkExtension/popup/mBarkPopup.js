@@ -1,4 +1,5 @@
-const log = chrome.extension.getBackgroundPage().console.log;
+// const log = chrome.extension.getBackgroundPage().console.log; //Note(Sam G): This failed to work for me?
+const log = console.log;
 
 class Course {
 	constructor(name, credits) {
@@ -25,6 +26,37 @@ function ResetMemory(callback) {
 function InitCourses(onLoadCallback) {
 
 	// try to load from storage or create a blank one on fail
+
+	pdfPage = "";
+	pdfFile = "../files/auditSamG.pdf";
+	pdfDoc = pdfjsLib.getDocument(pdfFile).promise.then(function(pdfDoc) {
+		
+		pdfDoc.getPage(1).then(function(pdfPage_) {
+
+			pdfPage = pdfPage_;
+
+			canvas = document.createElement("canvas");
+			context = canvas.getContext("2d");
+			pdfPage.render({
+				renderInteractiveForms: true,
+				canvasContext: context,
+				viewport: pdfPage.getViewport() 
+			});
+
+
+			// pdfPage.getTextContent().then(function(pdfTextContex){
+
+			// 	// filter the arrays between sets of 
+
+			// 	log(pdfTextContex);
+
+			// });
+
+			console.log(pdfPage);
+		});
+		// var pg1 = 
+	});
+
 
     chrome.storage.sync.get(['gCourses'], function(result) {
 
@@ -189,6 +221,5 @@ window.addEventListener("load", function(e) {
 
 		SaveCourses();
 	});
-
 
 });
