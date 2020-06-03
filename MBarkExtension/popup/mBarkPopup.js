@@ -1,3 +1,4 @@
+const log = chrome.extension.getBackgroundPage().console.log;
 
 class Course {
 	constructor(name, credits) {
@@ -10,13 +11,13 @@ gCourses = undefined;
 
 function SaveCourses() {
 	chrome.storage.sync.set({'gCourses': gCourses}, function() {
-		console.log("saved courses");
+		log("saved courses");
 	});
 } 
 
 function ResetMemory(callback) {
 	chrome.storage.sync.clear(function() {
-		console.log("Reset Memory");
+		log("Reset Memory");
 		if(typeof callback !== 'undefined') callback();
 	});
 }
@@ -59,7 +60,7 @@ function InitCourses(onLoadCallback) {
 			];
 
 			SaveCourses();    	
-			console.log("Created default courses");
+			log("Created default courses");
     	}
 
 		if(typeof onLoadCallback !== 'undefined') onLoadCallback();
@@ -79,7 +80,7 @@ function InitPopupPage() {
 		table.appendChild(row);
 	}
 
-	console.log("Init creditTable");
+	log("Init creditTable");
 }
 
 function InitLSASearch() {
@@ -94,10 +95,11 @@ function InitLSASearch() {
 		registerCourseElemt.addEventListener("click", function(e) {
 			
 			var clickedCourseName = e.target.innerText;
-			console.log("Requesting info for: "+clickedCourseName);
+			clickedCourseName = clickedCourseName.replace(/ /g,'');
+			log("Requesting info for: "+clickedCourseName);
 
 			// send out webrequest
-			var url = "https://umich.edu",
+			var url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?content=2310"+clickedCourseName+"001",
 				xhttp = new XMLHttpRequest();
 
 			xhttp.onreadystatechange = function() {
@@ -112,11 +114,14 @@ function InitLSASearch() {
 
 
 						// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
-						var elmts = responseDocument.getElementsByClassName("clear");
-						console.log(elmts);
+						var elmt = responseDocument.getElementById("contentMain_lblEnfPre");
+						//var str = elmt.innerText;
+						//str = str.replace(/ /g,'');
+						log(elmt);
+						//log(str);
 
 					} else {
-						console.log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
+						log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
 					}
 				}
 			};
@@ -127,7 +132,7 @@ function InitLSASearch() {
 
 	}
 
-	console.log("Init LSA Search");
+	log("Init LSA Search");
 }
 
 window.addEventListener("load", function(e) { 
