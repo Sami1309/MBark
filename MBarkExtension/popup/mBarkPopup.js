@@ -23,41 +23,67 @@ function ResetMemory(callback) {
 	});
 }
 
+async function ParsePDF(path, onComplete) {
+	
+	const kSentinel = "|";	// Note: used to separate text groups in a text block
+	this.textBlocks = [];
+
+	// strip all the text block from the pdf
+	var pdfDoc = await pdfjsLib.getDocument(path).promise;
+
+	var n = pdfDoc._pdfInfo.numPages;
+	for(var i = 1; i <= n; ++i) {
+
+		var pdfPage = await pdfDoc.getPage(i),
+			opList = await pdfPage.getOperatorList();
+
+		var blockStr = "";
+		for(var j = 0; j < opList.fnArray.length; ++j) {
+
+			switch(opList.fnArray[j]) {
+				case pdfjsLib.OPS.beginText: blockStr = "";
+				break;
+
+				case pdfjsLib.OPS.showText: {
+					var args = opList.argsArray[j];
+					
+					// sanity check - there is like 0 documentation on this stuff, but I believe this is always 1 arg
+					if(args.length != 1) {
+						log("Error: ShowText args Array not 1!");
+						log(args);
+					}
+
+					args = args[0];
+					blockStr+= kSentinel;
+					for(var x = 0; x < args.length; ++x) blockStr+= args[x].unicode; 
+
+				} break;
+
+				case pdfjsLib.OPS.endText: this.textBlocks.push(blockStr);
+				break;
+			}
+		}
+	}
+
+	log(this.textBlocks);
+
+	// parse the text blocks to pull out meaningful data
+
+
+	if(onComplete) onComplete(this);
+}
+
 function InitCourses(onLoadCallback) {
 
-	// try to load from storage or create a blank one on fail
+	gInfo = {};
 
-	pdfPage = "";
-	pdfFile = "../files/auditSamG.pdf";
-	pdfDoc = pdfjsLib.getDocument(pdfFile).promise.then(function(pdfDoc) {
-		
-		pdfDoc.getPage(1).then(function(pdfPage_) {
+	ParsePDF("../files/auditSamG.pdf", function(info) {
 
-			pdfPage = pdfPage_;
+		gInfo = info;
 
-			canvas = document.createElement("canvas");
-			context = canvas.getContext("2d");
-			pdfPage.render({
-				renderInteractiveForms: true,
-				canvasContext: context,
-				viewport: pdfPage.getViewport() 
-			});
-
-
-			// pdfPage.getTextContent().then(function(pdfTextContex){
-
-			// 	// filter the arrays between sets of 
-
-			// 	log(pdfTextContex);
-
-			// });
-
-			console.log(pdfPage);
-		});
-		// var pg1 = 
 	});
 
-
+	// try to load from storage or create a blank one on fail
     chrome.storage.sync.get(['gCourses'], function(result) {
 
     	if(result.gCourses) {
