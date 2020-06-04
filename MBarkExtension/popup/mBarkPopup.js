@@ -2,47 +2,66 @@
 const log = console.log;
 
 const CourseCategories = {
-	kCommon: 				"Common Requirements",
-	kIntellectualBreadth: 	"Intellectual Breadth",
-	kMajorCore: 			"CS Major Core",
+	kCore: 			 		 "CS Major Core",
+	kCommon: 				 "Common Requirements",
 	
-	kULCS: 					"Upper Level CS",
-	kFlexTech: 				"CS Technical Elective",
-	kGenElective: 			"General Elective",
+	kULCS: 					 "Upper Level CS",
+	kFlexTech: 				 "CS Technical Elective",
+	kGenElective: 			 "General Elective",
+
+	kHumanities: 			 "Humanities",
+	kIntellectualBreadth: 	 "Intellectual Breadth",
+	kIntellectualBreadth300: "Intellectual Breadth 300+"
 };
 
 const kSentinel = "|";
 
+const CourseStatus = {
+	kNotTaken: "Not Taken",
+	kFailed: "Failed",
+	kPassed: "Passed",
+	kInProgress : "In Progress"
+};
+
 class Course {
 	constructor(category, name, credits) {
 
+		this.name = name;
 		this.category = category; 
-		this.name = name; 		//Math, phys
 		this.credits = credits;
 
-		this.grade = "";
+		this.status = CourseStatus.kNotTaken;
+
+		this.grade = ""; //TODO: should this be a number?
 		this.numberOfTimesAttempted = 0;
-		this.passed = false;
+	
+		this.hash = name;
 	}
 }
 
 class VirtualCourse {
 	constructor(category, distributionReq, courseLevel, credits) {
+		
 		this.category = category;
 		this.distributionReq = distributionReq;
 		this.courseLevel = courseLevel;
 		this.credits = credits;
+
+		this.status = CourseStatus.kNotTaken;
+	
+		this.hash = category;
 	}
 }
 
 class Student {
 
-	constructor(coursesNeededForGraduation) {
+	constructor(courses) {
 
-		this.coursesTaken = [];
-		this.coursesInProgress = [];
-		this.coursesNeededForGraduation = coursesNeededForGraduation;
-	
+		this.courses = {};
+		for(var i = 0; i < courses.length; ++i) this.courses[courses[i].hash] = courses[i];
+		
+		this.name = "";
+		this.lastCourseAudit = "";
 		this.creditsInProgress = 0;	
 
 		this.creditsTowardProgram = 0;
@@ -60,18 +79,7 @@ class Student {
 	}
 
 	GetCourses(courseCategory) {
-		
-		var courseArrays = [this.coursesTaken, this.coursesInProgress, this.coursesNeededForGraduation];
-		for(var i = 0; i < courseArrays.length; ++i) {	
-
-			var courseArray = courseArrays[i];
-			for(var j = 0; j < courseArray; ++j) {
-				var course = courseArray[j];
-				if(course.category == courseCategory) result.push(course);
-			}
-		}
-
-		return result;
+		return Object.values(this.courses);
 	}
 
 	CoreGPAMeet() {
@@ -93,6 +101,83 @@ class Student {
 	CreditsTowardsProgramMeet() {
 		return this.creditsTowardProgram >= 128;
 	}
+
+	async ParsePDF(path) {
+
+		// strip all the text block from the pdf
+		var pdfDoc = await pdfjsLib.getDocument(path).promise;
+		this.textBlocks = [];
+
+		var n = pdfDoc._pdfInfo.numPages;
+		for(var i = 1; i <= n; ++i) {
+
+			var pdfPage = await pdfDoc.getPage(i),
+				opList = await pdfPage.getOperatorList();
+
+			var blockStr = "";
+			for(var j = 0; j < opList.fnArray.length; ++j) {
+
+				switch(opList.fnArray[j]) {
+					case pdfjsLib.OPS.beginText: blockStr = "";
+					break;
+
+					case pdfjsLib.OPS.showText: {
+						var args = opList.argsArray[j];
+						
+						// sanity check - there is like 0 documentation on this stuff, but I believe this is always 1 arg
+						if(args.length != 1) {
+							log("Error: ShowText args Array not 1!");
+							log(args);
+						}
+
+						args = args[0];
+						blockStr+= kSentinel;
+						for(var x = 0; x < args.length; ++x) blockStr+= args[x].unicode; 
+
+					} break;
+
+					case pdfjsLib.OPS.endText: this.textBlocks.push(blockStr);
+					break;
+				}
+			}
+		}
+
+		// Note: this assumes that COE CS audit pdfs all share the same format
+		// for() 
+
+		log(this.textBlocks);
+		if(!this.textBlocks.length) return;
+
+		var i = 0,
+			str = this.textBlocks[i];
+
+		// Process pdf header		
+		this.name = str.match(/(?<=\|Degree Audit Report\|For:\|)([^\|]*)/gm)[0].trim();
+		this.lastCourseAudit = str.match(/(?<=\|Generated On:\|)([^\|]*)/gm)[0].trim();
+
+		this.creditsTowardProgram = str.match(/(?<=\|CTP\|: )([0-9]+.?[0-9]*)/gm)[0];
+		this.creditsInProgress = str.match(/(?<=\|In Progress:\| )([0-9]+.?[0-9]*)/gm)[0];
+		this.cumulativeGPA = str.match(/(?<=\|GPA\|: )([0-9]+.?[0-9]*)/gm)[0];
+			
+		// skip to Math Requirement
+
+
+		for(++i; i < this.textBlocks.length && (str = this.textBlocks[i]).search(/\|\(RQ 6667\)/gm) == -1; ++i);
+		if(i == this.textBlocks.length) return;
+
+		str = this.textBlocks[++i];
+
+		var courseName = str.match(/(?<=^\|)(?:(?:or )?(?:(?:[A-Z]+ [0-9]+)(?:, [0-9]+)*)(?:, )?)+/gm)[0];
+		var course = courses[courseName]
+		if(!course) {
+			log("Course '"+courseName+"' not found in course dictionary!");
+			// continue;
+		}
+
+		// course. 
+
+
+	}	
 }
 
 gCourses = undefined;
@@ -126,56 +211,6 @@ function ResetMemory(callback) {
 }
 
 
-async function ParsePDF(path, onComplete) {
-	
-		// Note: used to separate text groups in a text block
-	this.textBlocks = [];
-
-	// strip all the text block from the pdf
-	var pdfDoc = await pdfjsLib.getDocument(path).promise;
-
-	var n = pdfDoc._pdfInfo.numPages;
-	for(var i = 1; i <= n; ++i) {
-
-		var pdfPage = await pdfDoc.getPage(i),
-			opList = await pdfPage.getOperatorList();
-
-		var blockStr = "";
-		for(var j = 0; j < opList.fnArray.length; ++j) {
-
-			switch(opList.fnArray[j]) {
-				case pdfjsLib.OPS.beginText: blockStr = "";
-				break;
-
-				case pdfjsLib.OPS.showText: {
-					var args = opList.argsArray[j];
-					
-					// sanity check - there is like 0 documentation on this stuff, but I believe this is always 1 arg
-					if(args.length != 1) {
-						log("Error: ShowText args Array not 1!");
-						log(args);
-					}
-
-					args = args[0];
-					blockStr+= kSentinel;
-					for(var x = 0; x < args.length; ++x) blockStr+= args[x].unicode; 
-
-				} break;
-
-				case pdfjsLib.OPS.endText: this.textBlocks.push(blockStr);
-				break;
-			}
-		}
-	}
-
-	log(this.textBlocks);
-
-	// parse the text blocks to pull out meaningful data
-
-
-	if(onComplete) onComplete(this);
-}
-
 function InitStudent(onLoadCallback) {
 
 	// try to load from storage or create a blank one on fail
@@ -205,30 +240,34 @@ function InitStudent(onLoadCallback) {
 				new Course(CourseCategories.kCommon, "PHYSICS 241", 1),
 			
 
-				new Course(CourseCategories.kMajorCore, "EECS 203", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 280", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 281", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 370", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 376", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 496", 1),
-				new Course(CourseCategories.kMajorCore, "TCHNCLCM 300", 1),
-				new Course(CourseCategories.kMajorCore, "TCHNCLCM 497", 1),
-				new Course(CourseCategories.kMajorCore, "STATS 250 "+kSentinel+" STATS 412"+kSentinel+" STATS 426"+kSentinel+" IOE 265"+kSentinel+" EECS 301", 4),
-				new Course(CourseCategories.kMajorCore, "EECS 441 "+kSentinel+" EECS 467 "+kSentinel+" EECS470 "+kSentinel+" EECS 473 "+kSentinel+" EECS 480 "+kSentinel+" EECS 494 "+kSentinel+" EECS 495"+kSentinel+" EECS 497", 4),
-				
+				new Course(CourseCategories.kCore, "EECS 203", 4),
+				new Course(CourseCategories.kCore, "EECS 280", 4),
+				new Course(CourseCategories.kCore, "EECS 281", 4),
+				new Course(CourseCategories.kCore, "EECS 370", 4),
+				new Course(CourseCategories.kCore, "EECS 376", 4),
+				new Course(CourseCategories.kCore, "EECS 496", 1),
 
-				new VirtualCourse(CourseCategories.kIntellectualBreadth, "HU", "100+", 3),
-				new VirtualCourse(CourseCategories.kIntellectualBreadth, "HU "+kSentinel+" SS", "300+", 3),
-				new VirtualCourse(CourseCategories.kIntellectualBreadth, "HU "+kSentinel+" SS", "100+", 16), //NOTE: This technically can be fulfilled with PCDC: https://bulletin.engin.umich.edu/ug-ed/reqs/#subnav-14
+				new Course(CourseCategories.kCore, "TCHNCLCM 300", 1),
+				new Course(CourseCategories.kCore, "TCHNCLCM 497", 1),
+				
+				new Course(CourseCategories.kCore, "STATS 250 "+kSentinel+" STATS 412"+kSentinel+" STATS 426"+kSentinel+" IOE 265"+kSentinel+" EECS 301", 4),
+				new Course(CourseCategories.kCore, "EECS 441 "+kSentinel+" EECS 467 "+kSentinel+" EECS470 "+kSentinel+" EECS 473 "+kSentinel+" EECS 480 "+kSentinel+" EECS 494 "+kSentinel+" EECS 495"+kSentinel+" EECS 497", 4),
+				
+				new VirtualCourse(CourseCategories.kHumanities, 			"HU",					"100+", 3),
+				new VirtualCourse(CourseCategories.kIntellectualBreadth300, "HU "+kSentinel+" SS", 	"300+", 3),
+				new VirtualCourse(CourseCategories.kIntellectualBreadth, 	"HU "+kSentinel+" SS", 	"100+", 16), //NOTE: This technically can be fulfilled with PCDC: https://bulletin.engin.umich.edu/ug-ed/reqs/#subnav-14
 	
-				new VirtualCourse(CourseCategories.kULCS, 		 "Upper Level CS", "100+", 16),
-				new VirtualCourse(CourseCategories.kFlexTech, 	 "FlexTech", "100+", 10),
-				new VirtualCourse(CourseCategories.kGenElective, "General Elective", "100+", 12), //TODO: Sam Confirm this
+				new VirtualCourse(CourseCategories.kULCS, 		 "Upper Level CS", 		"100+", 16),
+				new VirtualCourse(CourseCategories.kFlexTech, 	 "FlexTech", 			"100+", 10),
+				new VirtualCourse(CourseCategories.kGenElective, "General Elective", 	"100+", 12), //TODO: Sam Confirm this
 			]);
 
 			SaveStudent();    	
 			log("Created default courses");
     	}
+
+
+    	gStudent.ParsePDF("../files/auditSamG.pdf");
 
 		if(typeof onLoadCallback !== 'undefined') onLoadCallback();
     });	
@@ -239,13 +278,13 @@ function InitPopupPage() {
 	var table = document.getElementById("creditTable");
 
 	sum = 0;
-	courses = gStudent.coursesNeededForGraduation;
+	courses = gStudent.GetCourses();
 	for(var i = 0; i < courses.length; ++i) {
 
 		var row = document.createElement("tr"),
 			course = courses[i];
 
-		row.innerHTML = "<td class='reqCourse'>"+(course instanceof VirtualCourse ? course.category : course.name)+"</td><td>"+course.creditsCompleted+"</td><td>"+course.credits+"</td>"
+		row.innerHTML = "<td class='reqCourse'>"+(course instanceof VirtualCourse ? course.category : course.name)+"</td><td>"+course.status+"</td><td>"+course.credits+"</td>"
 		table.appendChild(row);
 
 		sum+= course.credits;
