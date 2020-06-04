@@ -37,15 +37,17 @@ class VirtualCourse {
 
 class Student {
 
-	constructor(coursesRequiredForGraduation) {
+	constructor(coursesNeededForGraduation) {
 
-		this.coursesTake = [];
+		this.coursesTaken = [];
 		this.coursesInProgress = [];
-		this.coursesNeededForGraduation = coursesRequiredForGraduation;
+		this.coursesNeededForGraduation = coursesNeededForGraduation;
 	
-		this.creditsTowardProgram = 0;
 		this.creditsInProgress = 0;	
-		this.residentClasses = 0;
+
+		this.creditsTowardProgram = 0;
+		this.residentCourseCount = 0;
+		this.coreResidentCourseCount = 0;
 		this.cumulativeGPA = 0;
 		this.coreGPA = 0;
 	}
@@ -58,34 +60,39 @@ class Student {
 	}
 
 	GetCourses(courseCategory) {
-		return [];
+		
+		var courseArrays = [this.coursesTaken, this.coursesInProgress, this.coursesNeededForGraduation];
+		for(var i = 0; i < courseArrays.length; ++i) {	
+
+			var courseArray = courseArrays[i];
+			for(var j = 0; j < courseArray; ++j) {
+				var course = courseArray[j];
+				if(course.category == courseCategory) result.push(course);
+			}
+		}
+
+		return result;
 	}
 
 	CoreGPAMeet() {
-		return false;
+		return this.coreGPA >= 2;
 	}
 
 	CummulativeGPAMeet() {
-		return false;
+		return this.cumulativeGPA >= 2.0;
 	}
 
 	ResidencyReqMeet() {
-		return false;
+		return residentCourseCount >= 50;
 	}
 
 	CSResidencyRequirementMeet() {
-		return false;
+		return this.coreResidentCourseCount >= 30;
 	}
 
 	CreditsTowardsProgramMeet() {
-		return false;
+		return this.creditsTowardProgram >= 128;
 	}
-
-	CumulativeCreditsMeet() {
-		return false;
-	}
-
-
 }
 
 gCourses = undefined;
@@ -105,8 +112,8 @@ function IsOpen(course) {
 	return CourseOpenStatus.kClosed;
 }
 
-function SaveCourses() {
-	chrome.storage.sync.set({'gCourses': gCourses}, function() {
+function SaveStudent() {
+	chrome.storage.sync.set({'gStudent': gStudent}, function() {
 		log("saved courses");
 	});
 } 
@@ -214,12 +221,12 @@ function InitStudent(onLoadCallback) {
 				new VirtualCourse(CourseCategories.kIntellectualBreadth, "HU "+kSentinel+" SS", "300+", 3),
 				new VirtualCourse(CourseCategories.kIntellectualBreadth, "HU "+kSentinel+" SS", "100+", 16), //NOTE: This technically can be fulfilled with PCDC: https://bulletin.engin.umich.edu/ug-ed/reqs/#subnav-14
 	
-				new VirtualCourse(CourseCategories.kULCS, "Upper Level CS", "100+", 16),
-				new VirtualCourse(CourseCategories.kFlexTech, "FlexTech", "100+", 10),
-				new VirtualCourse(CourseCategories.kGenElective,  "General Elective", "100+", 12), //TODO: Sam Confirm this
+				new VirtualCourse(CourseCategories.kULCS, 		 "Upper Level CS", "100+", 16),
+				new VirtualCourse(CourseCategories.kFlexTech, 	 "FlexTech", "100+", 10),
+				new VirtualCourse(CourseCategories.kGenElective, "General Elective", "100+", 12), //TODO: Sam Confirm this
 			]);
 
-			SaveCourses();    	
+			SaveStudent();    	
 			log("Created default courses");
     	}
 
@@ -346,6 +353,8 @@ function InitLSASearch() {
 window.addEventListener("load", function(e) { 
 	console.log("Popup Ready!");
 
+
+	// WARNING: REMOVE THIS WHEN DONE - MEMORY GETS FLUSHED JUST FOR DEBUGGING
 	ResetMemory();
 
 	InitStudent(function() {
@@ -353,7 +362,7 @@ window.addEventListener("load", function(e) {
 		InitPopupPage();
 		InitLSASearch();
 
-		SaveCourses();
+		SaveStudent();
 	});
 
 });
