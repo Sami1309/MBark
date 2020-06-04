@@ -1,4 +1,4 @@
-// const log = chrome.extension.getBackgroundPage().console.log; //Note(Sam G): This failed to work for me?
+//const log = chrome.extension.getBackgroundPage().console.log; //Note(Sam G): This failed to work for me?
 const log = console.log;
 
 const CourseCategories = {
@@ -371,6 +371,15 @@ function InitLSASearch() {
 						//var str = elmt.innerText;
 						//str = str.replace(/ /g,'');
 							log(elmt.innerText);
+							var cs = [];
+							elmt = elmt.innerText.split(" and ");
+							log(elmt.length);
+							for (var i = 0; i < elmt.length; ++i) {
+								//log("hi");
+								cs[cs.length] = elmt[i].split(" or ");
+							}
+							
+							log(cs);
 						//log(str);
 
 						} else {
