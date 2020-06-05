@@ -4,11 +4,11 @@
 - Get class prerequirements for clicked on courses
 - Create way to query the LSA course guide
 
-//Sam 
-- Parse pdfs as html
-- Get a list of completed courses
-- Build UI that changes when some clicks on a course
+//Sam G
+X Parse pdfs as html
+X Get a list of completed courses
 X Setup persistent storage for global variables
+- Build UI that changes when some clicks on a course
 
 //Sam I
 - Get a list of required courses
