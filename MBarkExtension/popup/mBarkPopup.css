@@ -27,7 +27,26 @@
 	cursor: pointer;
 }
 
-#requestAudit > iframe {
+#browser > iframe {
 	min-width: 500px;
 	min-height: 500px;
+}
+
+#auditInfo {
+	font-size: 1em;
+	background-color: aliceblue;
+}
+
+.auditRow {
+	display: flex;
+    place-content: center;
+}
+
+.auditRow p {
+	margin: 0;
+    padding: 0 2.5px;
+}
+
+.auditCol p {
+    margin: 0 5px;
 }

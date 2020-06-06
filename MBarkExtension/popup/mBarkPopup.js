@@ -55,10 +55,21 @@ const mBark = new class {
 		kWeightList: 	"WeightListed"
 	};
 
-	kAuditIframeName = "auditIframe";
+	Dom = {
+		kBrowserId: 	"browser",
+		kCreditTableId: "creditTable",
+
+		kAuditInfoId: 	"auditInfo",
+		kAuditNameId: 	"auditName",
+		kAuditDateId: 	"auditDate",
+		kAuditCTPId: 	"auditCTP",
+		kAuditCIPId: 	"auditCIP",
+
+		kAuditIframeName: "auditIframe",
+	};
+
 	kAuditURL = "https://webapps.lsa.umich.edu/UGStuFileV2/App/AuditSumm/MyLSAAudChklst.aspx?_MBARK_=1";
 
-	kCreditTableId = "creditTable";
 
 	Course = class {
 		constructor(category, name, credits) {
@@ -441,17 +452,17 @@ const mBark = new class {
 			}
 
 			this.onComplete = onComplete;
-			this.requestAuditElmt = document.getElementById("requestAudit");
 
 			this.iframe = document.createElement("iframe");
 			this.iframe.src = mBark.kAuditURL;
-			this.iframe.name = mBark.kAuditIframeName;
+			this.iframe.name = mBark.Dom.kAuditIframeName;
 
 			this.waitingOnForm = false;
 			this.waitingOnInputs = ["__VIEWSTATE", "__VIEWSTATEGENERATOR", "__EVENTVALIDATION" ];
 			this.inputs = []
 
-			this.requestAuditElmt.appendChild(this.iframe);
+			var browser = document.getElementById(mBark.Dom.kBrowserId);
+			browser.appendChild(this.iframe);
 		}
 
 		Update(auditMsg) {
@@ -496,7 +507,7 @@ const mBark = new class {
 		CreateAndSendForm() {
 			var form = document.createElement("form");
 
-			form.target = mBark.kAuditIframeName;
+			form.target = mBark.Dom.kAuditIframeName;
 			form.method = "post";
 			form.action = mBark.kAuditURL;
 			form.innerHTML = "<input type='hidden' name='ctl00$cphMain$rblType' value='pdf-auddet'>" +
@@ -606,10 +617,11 @@ const mBark = new class {
 	    });	
 	}
 
-	InitPopupPage() {
+	InitCreditTable() {
 
-		var table = document.getElementById(mBark.kCreditTableId);
-	
+		var table = document.getElementById(mBark.Dom.kCreditTableId);
+		table.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th></tr>";
+
 		var sum = 0,
 			courses = mBark.gStudent.GetCourses();
 		
@@ -625,6 +637,13 @@ const mBark = new class {
 		}
 
 		mBark.log("Init creditTable: "+ sum);
+	}
+
+	InitAuditInfo() {
+		document.getElementById(mBark.Dom.kAuditNameId).innerText = mBark.gStudent.name; 
+		document.getElementById(mBark.Dom.kAuditDateId).innerText = mBark.gStudent.lastCourseAudit;
+		document.getElementById(mBark.Dom.kAuditCTPId).innerText = mBark.gStudent.creditsTowardProgram;
+		document.getElementById(mBark.Dom.kAuditCIPId).innerText = mBark.gStudent.creditsInProgress;
 	}
 
 	InitLSASearch() {
@@ -770,26 +789,44 @@ const mBark = new class {
 
 			mBark.InitStudent(function() {
 
+				var DEBUG = 0;
+				if(DEBUG) {
 
+					mBark.gStudent.ParsePDF("../files/auditSamG.pdf", function() {
 
-				var creditTable = document.getElementById(mBark.kCreditTableId);
-				creditTable.style.display = "none";
-				mBark.gAuditRequester.RequestAudit(function(pdf) {
-					
-					creditTable.style.display = "";
-					creditTable.innerText = "Processing...";
-					
-
-					mBark.gStudent.ParsePDF(pdf, function() {
-
-						creditTable.innerText = "";
-						mBark.SaveMemory();
-						mBark.InitPopupPage();
+						mBark.InitCreditTable();
+						mBark.InitAuditInfo();
+						mBark.InitLSASearch();
 					});
 
-				});
+				} else {
 
-				mBark.InitLSASearch();
+					var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
+						auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
+					
+					creditTable.style.display = "none";
+					auditInfo.style.display = "none";
+
+					mBark.gAuditRequester.RequestAudit(function(pdf) {
+						
+						creditTable.style.display = "";
+						auditInfo.style.display = "";
+						creditTable.innerText = "Processing...";
+						
+						mBark.gStudent.ParsePDF(pdf, function() {
+
+							creditTable.innerText = "";
+							mBark.InitCreditTable();
+
+							mBark.InitAuditInfo();
+							mBark.InitLSASearch();
+
+							mBark.SaveMemory();
+						});
+
+					});
+
+				}
 			});
 		});	
 	}
