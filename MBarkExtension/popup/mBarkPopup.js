@@ -861,16 +861,7 @@ const mBark = new class {
 
 					creditTable.innerText = "";
 
-<<<<<<< HEAD
-						mBark.InitCreditTable();
-						mBark.InitAuditInfo();
-						mBark.InitLSASearch();
-						mBark.InitCollapsables();
-					});
-=======
 					mBark.UpdateStudentDependencies();
->>>>>>> c4445ec549866ce102847658f5618f41b222c595
-
 					mBark.SaveMemory();
 				});
 
@@ -881,14 +872,8 @@ const mBark = new class {
 
 		mBark.InitMessgePump();
 
-<<<<<<< HEAD
-							mBark.InitAuditInfo();
-							mBark.InitLSASearch();
-							mBark.InitCollapsables();
-=======
 		window.addEventListener("load", function(e) { 
 			mBark.log("Popup Ready!");
->>>>>>> c4445ec549866ce102847658f5618f41b222c595
 
 			// // WARNING: REMOVE THIS WHEN DONE - MEMORY GETS FLUSHED JUST FOR DEBUGGING
 			// mBark.ResetMemory();
