@@ -629,9 +629,17 @@ const mBark = new class {
 
 			var row = document.createElement("tr"),
 				course = courses[i];
+			
+			row.className="collapsableButton";
 
 			row.innerHTML = "<td class='reqCourse'>"+mBark.kSentinelStrToText(course instanceof mBark.VirtualCourse ? course.category : course.name)+"</td><td>"+course.status+"</td><td>"+course.credits+"</td>"
 			table.appendChild(row);
+
+			var text = document.createElement("p")
+
+			text.innerHTML = "some example text"
+
+			table.appendChild(text)
 
 			sum+= course.credits;
 		}
@@ -751,6 +759,23 @@ const mBark = new class {
 		mBark.log("Init LSA Search");
 	}
 
+	InitCollapsables() {
+		var coll = document.getElementsByClassName("collapsableButton");
+		var i;
+
+		for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.maxHeight){
+      content.style.maxHeight = null;
+    } else {
+      content.style.maxHeight = content.scrollHeight + "px";
+    } 
+  });
+}
+	}
+
 
 	InitMessgePump() {
 		// setup message pump for cross script communication
@@ -797,6 +822,7 @@ const mBark = new class {
 						mBark.InitCreditTable();
 						mBark.InitAuditInfo();
 						mBark.InitLSASearch();
+						mBark.InitCollapsables();
 					});
 
 				} else {
@@ -820,6 +846,7 @@ const mBark = new class {
 
 							mBark.InitAuditInfo();
 							mBark.InitLSASearch();
+							mBark.InitCollapsables();
 
 							mBark.SaveMemory();
 						});

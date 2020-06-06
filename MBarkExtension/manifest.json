@@ -3,7 +3,7 @@
 	"name": "MBark",
 	"version": "1.0",
 	"author": "SOS",
-	"description": "A chrome extension that helps UofM COE undergrads manage there graduation requirements",
+	"description": "A chrome extension that helps UofM COE undergrads manage their graduation requirements",
 	
 	// Shown in webstore	
 	// "icons": { 
