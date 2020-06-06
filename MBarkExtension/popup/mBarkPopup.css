@@ -26,3 +26,8 @@
 .reqCourse {
 	cursor: pointer;
 }
+
+#requestAudit > iframe {
+	min-width: 500px;
+	min-height: 500px;
+}
