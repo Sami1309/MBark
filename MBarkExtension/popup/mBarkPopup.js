@@ -3,6 +3,7 @@
 const mBark = new class {		
 
 	log = console.log;
+	//log = chrome.extension.getBackgroundPage().console.log;
 	kSentinel = "|";
 	kSentinelRegex = "\\|";
 
@@ -92,6 +93,7 @@ const mBark = new class {
 	VirtualCourse = class {
 		constructor(category, distributionReq, courseLevel, credits) {
 			
+			this.isVirtual = true; //Note: data gets stored as JSON so this is needed to check if a course is virtual [Cannot use 'isinstance']
 			this.category = category;
 			this.distributionReq = distributionReq;
 			this.courseLevel = courseLevel;
@@ -111,7 +113,9 @@ const mBark = new class {
 		constructor(courses) {
 
 			this.courses = {};
-			for(var i = 0; i < courses.length; ++i) this.courses[courses[i].hash] = courses[i];
+			if(courses) {
+				for(var i = 0; i < courses.length; ++i) this.courses[courses[i].hash] = courses[i];
+			}
 			
 			this.name = "";
 			this.lastCourseAudit = "";
@@ -122,6 +126,23 @@ const mBark = new class {
 			this.coreResidentCredits = 0;
 			this.cumulativeGPA = 0;
 			this.coreGPA = 0;
+		}
+
+		static LoadFromData(studentData) {
+
+			var student = new mBark.Student();
+			student.name = studentData.name;
+			student.courses = studentData.courses;			
+			student.lastCourseAudit = studentData.lastCourseAudit;
+
+			student.coreGPA = studentData.coreGPA;
+			student.cumulativeGPA = studentData.cumulativeGPA;
+			student.residentCredits = studentData.residentCredits;
+			student.creditsInProgress = studentData.creditsInProgress;	
+			student.coreResidentCredits = studentData.coreResidentCredits;
+			student.creditsTowardProgram = studentData.creditsTowardProgram;
+
+			return student;
 		}
 
 		CanTakeCourse(courseName) {
@@ -202,6 +223,7 @@ const mBark = new class {
 
 				const kNeededRegex = /([0-9]*\.?[0-9]*)(?=\sneeded)/gm;
 				const kRequiredRegex = /([0-9]*\.?[0-9]*)(?=\srequired)/gm;
+				const kCompletedRegex = /([0-9]*\.?[0-9]*)(?=\scompleted)/gm;
 				const kCompleteAndProgressRegex = /([0-9]*\.?[0-9]*)(?=\scompleted\/in-progress)/gm;
 
 				const kFieldRegex = new RegExp("((?<="+mBark.kSentinelRegex+")[^"+mBark.kSentinelRegex+"]*)", "gm");
@@ -424,7 +446,7 @@ const mBark = new class {
 				student.coreResidentCredits = parseFloat(FindInStr(str, kCompleteAndProgressRegex));
 
 				if(!(str = fastforward.next())) return;
-				student.coreGPA = parseFloat(FindInStr(str, kCompleteAndProgressRegex));
+				student.coreGPA = parseFloat(FindInStr(str, kCompletedRegex));
 
 				processVCourses({
 					vCourseSearchTerms: [/.*/gm, null],
@@ -560,14 +582,19 @@ const mBark = new class {
 	InitStudent(onLoadCallback) {
 
 		// try to load from storage or create a blank one on fail
-	    chrome.storage.sync.get(['gStudent'], function(result) {
+	    chrome.storage.local.get(['gStudent'], function(result) {
 
+	    	var initFromMemory;
 	    	if(result.gStudent) {
 
-	    		mBark.gStudent = result.gCourses;
-	    		console.mBark.log("Loaded mBark.gStudent from storage");
+	    		initFromMemory = true;
+	    		mBark.gStudent = mBark.Student.LoadFromData(result.gStudent);
+	    		mBark.log("Loaded mBark.gStudent from storage:");
+	    		mBark.log(mBark.gStudent);
 
 	    	} else {
+
+	    		initFromMemory = false;
 				mBark.gStudent = new mBark.Student([
 					new mBark.Course(mBark.CourseCategories.kCommon, "MATH 115", 4),
 					new mBark.Course(mBark.CourseCategories.kCommon, "MATH 116", 4),
@@ -613,11 +640,11 @@ const mBark = new class {
 				mBark.log("Created default student");
 	    	}
 
-	    	if(onLoadCallback) onLoadCallback();
+	    	if(onLoadCallback) onLoadCallback(initFromMemory);
 	    });	
 	}
 
-	InitCreditTable() {
+	UpdateCreditTable() {
 
 		var table = document.getElementById(mBark.Dom.kCreditTableId);
 		table.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th></tr>";
@@ -632,7 +659,7 @@ const mBark = new class {
 			
 			row.className="collapsableButton";
 
-			row.innerHTML = "<td class='reqCourse'>"+mBark.kSentinelStrToText(course instanceof mBark.VirtualCourse ? course.category : course.name)+"</td><td>"+course.status+"</td><td>"+course.credits+"</td>"
+			row.innerHTML = "<td class='reqCourse'>"+mBark.kSentinelStrToText(course.isVirtual ? course.category : course.name)+"</td><td>"+course.status+"</td><td>"+course.credits+"</td>"
 			table.appendChild(row);
 
 			var text = document.createElement("p")
@@ -647,14 +674,14 @@ const mBark = new class {
 		mBark.log("Init creditTable: "+ sum);
 	}
 
-	InitAuditInfo() {
+	UpdateAuditInfo() {
 		document.getElementById(mBark.Dom.kAuditNameId).innerText = mBark.gStudent.name; 
 		document.getElementById(mBark.Dom.kAuditDateId).innerText = mBark.gStudent.lastCourseAudit;
 		document.getElementById(mBark.Dom.kAuditCTPId).innerText = mBark.gStudent.creditsTowardProgram;
 		document.getElementById(mBark.Dom.kAuditCIPId).innerText = mBark.gStudent.creditsInProgress;
 	}
 
-	InitLSASearch() {
+	UpdateLSASearch() {
 
 		var requiredCourses = document.getElementsByClassName("reqCourse");
 
@@ -738,9 +765,17 @@ const mBark = new class {
 								for (var i = 0; i < elmt.length; ++i) {
 									//mBark.log("hi");
 									cs[cs.length] = elmt[i].split(" or ");
+
 								}
-								
+					
 								mBark.log(cs);
+								for (var t1 = 0; t1 < cs.length; ++t1) {
+									var app = cs[t1];
+									for (var t2 = 0; t2 < app.length; ++t2) {
+										mBark.log(app[t2]);
+									}
+									mBark.log(app.length);
+								}
 							//mBark.log(str);
 
 							} else {
@@ -802,58 +837,67 @@ const mBark = new class {
 
 	}
 
-	Init() {
+	UpdateStudentDependencies() {
+		mBark.UpdateAuditInfo();
+		mBark.UpdateCreditTable();
+		mBark.UpdateLSASearch();						
+	}
 
-		mBark.InitMessgePump();
+	UpdateAudit() {
+	
+		var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
+			auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
+		
+			creditTable.style.display = "none";
+			auditInfo.style.display = "none";
 
-		window.addEventListener("load", function(e) { 
-			mBark.log("Popup Ready!");
+			mBark.gAuditRequester.RequestAudit(function(pdf) {
+				
+				creditTable.style.display = "";
+				auditInfo.style.display = "";
+				creditTable.innerText = "Processing...";
+				
+				mBark.gStudent.ParsePDF(pdf, function() {
 
-			// WARNING: REMOVE THIS WHEN DONE - MEMORY GETS FLUSHED JUST FOR DEBUGGING
-			mBark.ResetMemory();
+					creditTable.innerText = "";
 
-			mBark.InitStudent(function() {
-
-				var DEBUG = 0;
-				if(DEBUG) {
-
-					mBark.gStudent.ParsePDF("../files/auditSamG.pdf", function() {
-
+<<<<<<< HEAD
 						mBark.InitCreditTable();
 						mBark.InitAuditInfo();
 						mBark.InitLSASearch();
 						mBark.InitCollapsables();
 					});
+=======
+					mBark.UpdateStudentDependencies();
+>>>>>>> c4445ec549866ce102847658f5618f41b222c595
 
-				} else {
+					mBark.SaveMemory();
+				});
 
-					var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
-						auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
-					
-					creditTable.style.display = "none";
-					auditInfo.style.display = "none";
+			});
+	}
 
-					mBark.gAuditRequester.RequestAudit(function(pdf) {
-						
-						creditTable.style.display = "";
-						auditInfo.style.display = "";
-						creditTable.innerText = "Processing...";
-						
-						mBark.gStudent.ParsePDF(pdf, function() {
+	Init() {
 
-							creditTable.innerText = "";
-							mBark.InitCreditTable();
+		mBark.InitMessgePump();
 
+<<<<<<< HEAD
 							mBark.InitAuditInfo();
 							mBark.InitLSASearch();
 							mBark.InitCollapsables();
+=======
+		window.addEventListener("load", function(e) { 
+			mBark.log("Popup Ready!");
+>>>>>>> c4445ec549866ce102847658f5618f41b222c595
 
-							mBark.SaveMemory();
-						});
+			// // WARNING: REMOVE THIS WHEN DONE - MEMORY GETS FLUSHED JUST FOR DEBUGGING
+			// mBark.ResetMemory();
 
-					});
+			mBark.InitStudent(function(initFromMemory) {
 
-				}
+				if(initFromMemory) mBark.UpdateStudentDependencies();
+				else mBark.UpdateAudit();
+			
 			});
 		});	
 	}

@@ -1,0 +1,4 @@
+
+.mBarkHideScrollbar::-webkit-scrollbar {
+	display: none; /*Disable iframe scrollbar while still allowing scrolling*/
+}
