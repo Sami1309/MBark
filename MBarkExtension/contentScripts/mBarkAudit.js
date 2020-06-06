@@ -33,7 +33,7 @@ if(ParseUrl(location.href).getData["_MBARK_"]) {
 	// hide content
 	// TODO: make this look good
 	//		 this takes ~5 - 10 seconds to complete so make sure we have a proper loading screen!	
-	console.log("MBARK Detected - Hiding page");
+	console.log("MBARK audit detected - Hiding page");
 
 	var html = document.getElementsByTagName("html")[0],
 		loadingDiv = document.createElement("div");

@@ -3,11 +3,12 @@
 	width: max-content;
     height: max-content;
     text-align: center;
+	position: relative;
 }
 
 .banner {
 	color: darkblue;
-    font-size: 1.5em;
+    font-size: 1.2em;
     min-width: max-content;
 }
 
@@ -30,11 +31,28 @@
 #browser > iframe {
 	min-width: 500px;
 	min-height: 500px;
+	border: none;
 }
 
 #auditInfo {
 	font-size: 1em;
 	background-color: aliceblue;
+	padding: 10px;
+}
+
+#auditRefresh::before {
+	content: "\2b6e"; /*unicode - triangle tipped open circle arrow */
+}
+
+#auditRefresh {
+	position: absolute;
+    left: 5px;
+    top: 0px;
+    font-family: monospace;
+    font-weight: bolder;
+    transform: rotateZ(0deg);
+    font-size: 1.5em;
+    cursor: pointer;
 }
 
 .auditRow {
