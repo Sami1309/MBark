@@ -3,6 +3,7 @@
 const mBark = new class {		
 
 	log = console.log;
+	//log = chrome.extension.getBackgroundPage().console.log;
 	kSentinel = "|";
 	kSentinelRegex = "\\|";
 
@@ -756,9 +757,17 @@ const mBark = new class {
 								for (var i = 0; i < elmt.length; ++i) {
 									//mBark.log("hi");
 									cs[cs.length] = elmt[i].split(" or ");
+
 								}
-								
+					
 								mBark.log(cs);
+								for (var t1 = 0; t1 < cs.length; ++t1) {
+									var app = cs[t1];
+									for (var t2 = 0; t2 < app.length; ++t2) {
+										mBark.log(app[t2]);
+									}
+									mBark.log(app.length);
+								}
 							//mBark.log(str);
 
 							} else {
