@@ -362,7 +362,7 @@ const mBark = new class {
 							var vCourse = vCourses[m],
 								vOffset = vCourseOffsets[m] + 1, // ignore the name field
 								minFields = vOffset + 3;
-
+							mBark.log(vCourse)
 							var fields = str.match(kFieldRegex);
 
 							if(fields.length < minFields) {
