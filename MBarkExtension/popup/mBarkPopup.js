@@ -942,27 +942,31 @@ const mBark = new class {
 
 	UpdateAudit() {
 	
-		var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
-			auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
-		
-			creditTable.style.display = "none";
-			auditInfo.style.display = "none";
+		mBark.ResetMemory(); //flush old student in case its corrupt
+		mBark.InitStudent(function(initFromMemory) {
+	
+			var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
+				auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
+			
+				creditTable.style.display = "none";
+				auditInfo.style.display = "none";
 
-			mBark.gAuditRequester.RequestAudit(function(pdf) {
-				
-				creditTable.style.display = "";
-				auditInfo.style.display = "";
-				creditTable.innerText = "Processing...";
-				
-				mBark.gStudent.ParsePDF(pdf, function() {
+				mBark.gAuditRequester.RequestAudit(function(pdf) {
+					
+					creditTable.style.display = "";
+					auditInfo.style.display = "";
+					creditTable.innerText = "Processing...";
+					
+					mBark.gStudent.ParsePDF(pdf, function() {
 
-					creditTable.innerText = "";
+						creditTable.innerText = "";
 
-					mBark.UpdateStudentDependencies();
-					mBark.SaveMemory();
+						mBark.UpdateStudentDependencies();
+						mBark.SaveMemory();
+					});
+
 				});
-
-			});
+		});
 	}
 
 	Init() {
