@@ -34,7 +34,7 @@ const mBark = new class {
 		kCore: 			 		 "CS Major Core",
 		kCommon: 				 "Common Requirements",
 		
-		kULCS: 					 "Upper Level CS",
+		kULCS: 					 "CS Upper Level",
 		kFlexTech: 				 "CS Technical Elective",
 		kGenElective: 			 "General Elective",
 		kNotCounted: 			 "Not Counted",
@@ -60,11 +60,18 @@ const mBark = new class {
 		kBrowserId: 	"browser",
 		kCreditTableId: "creditTable",
 
-		kAuditInfoId: 	"auditInfo",
-		kAuditNameId: 	"auditName",
-		kAuditDateId: 	"auditDate",
-		kAuditCTPId: 	"auditCTP",
-		kAuditCIPId: 	"auditCIP",
+		kAuditInfoId: 		"auditInfo",
+		kAuditNameId: 		"auditName",
+		kAuditDateId: 		"auditDate",
+		kAuditCTPId: 		"auditCTP",
+		kAuditCIPId: 		"auditCIP",
+		kAuditRefreshId: 	"auditRefresh",
+
+		kMainPageId: 			"mainPage",
+		kCategoryPageId: 		"categoryPage",
+		kContentPageId: 		"content",
+		kCategoryPageId: 		"categoryPage",
+		kCategoryBackButtonId: 	"categoryBackButton",
 
 		kAuditIframeName: "auditIframe",
 	};
@@ -153,7 +160,12 @@ const mBark = new class {
 		}
 
 		GetCourses(courseCategory) {
-			return Object.values(this.courses);
+			var val = Object.values(this.courses);
+			val.sort(function(a,b) {
+				return 	a.category < b.category ? -1 : 
+						a.category > b.category ? 1 : 0;
+			});
+			return val; 
 		}
 
 		// ---TODO: Pull these requirements from the audit in case they change
@@ -644,34 +656,113 @@ const mBark = new class {
 	    });	
 	}
 
-	UpdateCreditTable() {
+	GenerateCategoryPage(category) {
 
-		var table = document.getElementById(mBark.Dom.kCreditTableId);
+		var categoryPage = document.getElementById(mBark.Dom.kCategoryPageId),
+			mainPage 	 = document.getElementById(mBark.Dom.kMainPageId);
+
+		mainPage.style.display = "none";		
+		categoryPage.style.display = "";
+
+		categoryPage.innerHTML = "<div id='"+mBark.Dom.kCategoryBackButtonId+"'></div>" + 
+							 "<h1 class='banner'>"+category+"</h1>";
+
+
+		var backButton = document.getElementById(mBark.Dom.kCategoryBackButtonId);
+		backButton.addEventListener("click", function(e) {
+
+			mBark.GenerateMainPage();
+
+		});
+
+
+
+		//generate checkboxes
+
+		//generate search button
+
+		var content = document.getElementById(mBark.Dom.kContentPageId);						 
+
+
+	}
+
+	GenerateMainPage() {
+
+		var categoryPage = document.getElementById(mBark.Dom.kCategoryPageId),
+			mainPage 	 = document.getElementById(mBark.Dom.kMainPageId),
+			table = document.getElementById(mBark.Dom.kCreditTableId);
+
+		categoryPage.style.display = "none";
+		mainPage.style.display = "";
+
 		table.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th></tr>";
 
-		var sum = 0,
-			courses = mBark.gStudent.GetCourses();
+		var courses = mBark.gStudent.GetCourses(),
+			categories = {};
 		
+		// group courses by category
 		for(var i = 0; i < courses.length; ++i) {
+			
+			var course = courses[i],
+				courseArray = course.isVirtual ? course.courses : [course],
+				category = course.category;
+
+			if(!categories[category]) {
+				categories[category] = {
+					name: category,
+					status: mBark.CourseStatus.kNotTaken,
+					creditsRequired: 0,
+					creditsCompleted: 0
+				};
+			}
+
+
+			for(var j = 0; j < courseArray.length; ++j) {
+				
+				course = courseArray[j];
+	
+				var status = categories[category].status;
+				switch(status) {
+					case mBark.CourseStatus.kNotTaken: status = course.status;
+					break;
+
+					case mBark.CourseStatus.kCompleted: {
+						if(course.status == mBark.CourseStatus.kInProgress || mBark.CourseStatus.kNotTaken) {
+							status = mBark.CourseStatus.kInProgress;
+						} 
+					} break;
+				}
+
+				categories[category].status = status;
+				categories[category].creditsRequired+= course.credits;
+				if(course.status == mBark.CourseStatus.kCompleted) {
+					categories[category].creditsCompleted+= course.credits;
+				}
+			}
+		}
+		categories = Object.values(categories);
+
+		// generate table rows
+		for(var i = 0; i < categories.length; ++i) {
 
 			var row = document.createElement("tr"),
-				course = courses[i];
-			
-			row.className="collapsableButton";
+				category = categories[i];
 
-			row.innerHTML = "<td class='reqCourse'>"+mBark.kSentinelStrToText(course.isVirtual ? course.category : course.name)+"</td><td>"+course.status+"</td><td>"+course.credits+"</td>"
+			row.className = "reqCourse";
+			row.setAttribute("category", category.name);
+			row.innerHTML = "<td>"+category.name+"</td><td>"+category.status+"</td><td>"+category.creditsCompleted+"/"+category.creditsRequired+"</td>";
 			table.appendChild(row);
 
-			var text = document.createElement("p")
+			row.addEventListener("click", function(e) {
 
-			text.innerHTML = "some example text"
-
-			table.appendChild(text)
-
-			sum+= course.credits;
+				var category = e.currentTarget.getAttribute("category");
+				mBark.log("CAT: "+category);
+				
+				mBark.GenerateCategoryPage(category);
+			});
 		}
 
-		mBark.log("Init creditTable: "+ sum);
+		mBark.log("Init creditTable");
 	}
 
 	UpdateAuditInfo() {
@@ -679,6 +770,12 @@ const mBark = new class {
 		document.getElementById(mBark.Dom.kAuditDateId).innerText = mBark.gStudent.lastCourseAudit;
 		document.getElementById(mBark.Dom.kAuditCTPId).innerText = mBark.gStudent.creditsTowardProgram;
 		document.getElementById(mBark.Dom.kAuditCIPId).innerText = mBark.gStudent.creditsInProgress;
+
+		var refreshButton = document.getElementById(mBark.Dom.kAuditRefreshId);
+		refreshButton.addEventListener("click", function(e){
+			mBark.UpdateAudit();
+		});
+
 	}
 
 	UpdateLSASearch() {
@@ -755,7 +852,7 @@ const mBark = new class {
 
 
 							// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
-								var elmt = responseDocument.getElementById("contentMain_lblEnfPre");
+								var elmt = responseDocument.getElementById("contentMain_lblEnfPre"); //ERROR? this sometimes is null 
 							//var str = elmt.innerText;
 							//str = str.replace(/ /g,'');
 								mBark.log(elmt.innerText);
@@ -799,16 +896,16 @@ const mBark = new class {
 		var i;
 
 		for (i = 0; i < coll.length; i++) {
-  coll[i].addEventListener("click", function() {
-    this.classList.toggle("active");
-    var content = this.nextElementSibling;
-    if (content.style.maxHeight){
-      content.style.maxHeight = null;
-    } else {
-      content.style.maxHeight = content.scrollHeight + "px";
-    } 
-  });
-}
+		  coll[i].addEventListener("click", function() {
+		    this.classList.toggle("active");
+		    var content = this.nextElementSibling;
+		    if (content.style.maxHeight){
+		      content.style.maxHeight = null;
+		    } else {
+		      content.style.maxHeight = content.scrollHeight + "px";
+		    } 
+		  });
+		}
 	}
 
 
@@ -839,7 +936,7 @@ const mBark = new class {
 
 	UpdateStudentDependencies() {
 		mBark.UpdateAuditInfo();
-		mBark.UpdateCreditTable();
+		mBark.GenerateMainPage();
 		mBark.UpdateLSASearch();						
 	}
 
@@ -874,9 +971,6 @@ const mBark = new class {
 
 		window.addEventListener("load", function(e) { 
 			mBark.log("Popup Ready!");
-
-			// // WARNING: REMOVE THIS WHEN DONE - MEMORY GETS FLUSHED JUST FOR DEBUGGING
-			// mBark.ResetMemory();
 
 			mBark.InitStudent(function(initFromMemory) {
 
