@@ -24,6 +24,18 @@
 	text-align: left;
 }
 
+#classTable {
+	text-align: center;
+}
+
+#creditTable tr > * {
+	padding: 0 5px;
+}
+
+#creditTable tr td:first-child {
+	text-align: left;
+}
+
 /*#creditTable tr td {
     pointer-events: none;
 }

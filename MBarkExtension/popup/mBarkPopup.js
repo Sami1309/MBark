@@ -70,6 +70,7 @@ const mBark = new class {
 		kMainPageId: 			"mainPage",
 		kCategoryPageId: 		"categoryPage",
 		kContentPageId: 		"content",
+		kClassTableId: 			"classTable",
 		kCategoryPageId: 		"categoryPage",
 		kCategoryBackButtonId: 	"categoryBackButton",
 
@@ -133,6 +134,8 @@ const mBark = new class {
 			this.coreResidentCredits = 0;
 			this.cumulativeGPA = 0;
 			this.coreGPA = 0;
+
+			this.searchCourses = []
 		}
 
 		static LoadFromData(studentData) {
@@ -176,6 +179,28 @@ const mBark = new class {
 
 		CummulativeGPAMeet() {
 			return this.cumulativeGPA >= 2.0;
+		}
+
+		AddSearchCourse(course) {
+			this.searchCourses.push(course)
+		}
+
+		RemoveSearchCourse(course) {
+			const index = this.searchCourses.indexOf(course)
+			if(index > -1)
+			{
+				this.searchCourses.splice(index, 1)
+			}
+		}
+
+		GetSearchCourses()
+		{
+			return this.searchCourses;
+			//TODO alphabetize, add more information? just reference getcourses but specific indices?
+		}
+
+		ClearSearchCourses() {
+			this.searchCourses = []
 		}
 
 		ResidencyReqMeet() {
@@ -664,8 +689,10 @@ const mBark = new class {
 		mainPage.style.display = "none";		
 		categoryPage.style.display = "";
 
+
 		categoryPage.innerHTML = "<div id='"+mBark.Dom.kCategoryBackButtonId+"'></div>" + 
 							 "<h1 class='banner'>"+category+"</h1>";
+							 
 
 
 		var backButton = document.getElementById(mBark.Dom.kCategoryBackButtonId);
@@ -675,13 +702,91 @@ const mBark = new class {
 
 		});
 
-
+		var courses = mBark.gStudent.GetCourses()
 
 		//generate checkboxes
 
 		//generate search button
+		var content = document.getElementById(mBark.Dom.kClassTableId);
 
-		var content = document.getElementById(mBark.Dom.kContentPageId);						 
+		content.style.display = "";
+		
+		content.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th> <th>Select</th></tr>";
+
+		for(var i = 0; i < courses.length; ++i)
+		{
+			var course = courses[i],
+				courseArray = course.isVirtual ? course.courses : [course],
+				selectCategory = course.category;
+
+			if(selectCategory == category)
+			{
+				for(var j = 0; j < courseArray.length; ++j)
+				{
+					var row = document.createElement("tr")
+				
+
+					row.className = "myCourse";
+				
+					row.innerHTML = "<td>"+courseArray[j].name+"</td><td>"+
+						courseArray[j].status+"</td><td>"+courseArray[j].credits+
+						"</td> <input type='checkbox' "+
+						(courseArray[j].status == 'Completed' ? 'disabled' : '') +
+						 " id='"+courseArray[j].name+"' >";
+						 
+					content.appendChild(row);
+				}
+				
+			}
+		}
+		//TODO ISSUE event listener added each time so there are multiple ones if user exits and re enters menus, array populated n times
+		//if(content.getAttribute('listener') !== 'true')
+		//{
+			content.addEventListener("click", function(e) {
+
+		//}
+		
+			if(e.path[0].localName=="input")
+			{
+				mBark.log(e.path[0].id)
+
+				if(e.path[0].checked)
+				{
+					//add course
+					mBark.log("Added course " + e.path[0].id + " to search")
+					mBark.gStudent.AddSearchCourse(e.path[0].id)
+				}
+				else
+				{
+					//remove course
+					mBark.log("Removed course " + e.path[0].id + " from search")
+					mBark.gStudent.RemoveSearchCourse(e.path[0].id)
+				}
+
+			}
+		});
+
+		//TODO button now works for courses that are listed despite not being taken,
+		var button = document.createElement("button")
+
+		button.innerHTML = "Search Selected Classes"
+
+		content.append(button)
+
+		button.addEventListener("click", function(e) {
+
+			mBark.log(e)
+			//TODO OZAN  the classes to search for can be retrieved with mBark.gStudent.GetSearchCourses(), implement a function that queries the LSA course guide for those and redirects
+			mBark.log("searching for selected classes")
+
+			mBark.log("Classes are " + mBark.gStudent.GetSearchCourses())
+			mBark.log(category)
+			//if category == "CS Major Core" || category == "Common Requirements" , then search selected classes, otherwise search the whole category
+			//var category = e.currentTarget.getAttribute("category");
+			//mBark.log("CAT: "+category);
+			
+			//mBark.GenerateCategoryPage(category);
+		});
 
 
 	}
@@ -690,10 +795,14 @@ const mBark = new class {
 
 		var categoryPage = document.getElementById(mBark.Dom.kCategoryPageId),
 			mainPage 	 = document.getElementById(mBark.Dom.kMainPageId),
-			table = document.getElementById(mBark.Dom.kCreditTableId);
+			table = document.getElementById(mBark.Dom.kCreditTableId),
+			content = document.getElementById(mBark.Dom.kClassTableId);
 
 		categoryPage.style.display = "none";
+		content.style.display = "none"
 		mainPage.style.display = "";
+
+		mBark.gStudent.ClearSearchCourses();
 
 		table.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th></tr>";
 
@@ -776,6 +885,10 @@ const mBark = new class {
 			mBark.UpdateAudit();
 		});
 
+	}
+
+	DisplayText() {
+		mBark.log("some example text")
 	}
 
 	UpdateLSASearch() {
