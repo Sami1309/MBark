@@ -85,6 +85,10 @@ const mBark = new class {
 		kAuditIframeName: "auditIframe",
 	};
 
+	// Note: used to decompose course Hash Strs into subject and number part [EX: 'CHEM 125|126' -> subject: 'CHEM 125 ', number: '125|126']
+	kCourseSubjectRegex = /([A-Z]+ )/gm;
+	kCourseNumbersRegexp = /([^A-Z]+)/gm;
+
 	kAuditURL = "https://webapps.lsa.umich.edu/UGStuFileV2/App/AuditSumm/MyLSAAudChklst.aspx?_MBARK_=1";
 
 
@@ -102,7 +106,6 @@ const mBark = new class {
 		elementClone.addEventListener(eventName, func);
 		element.parentNode.replaceChild(elementClone, element);		
 	}
-
 
 	Course = class {
 		constructor(category, name, credits) {
@@ -140,6 +143,34 @@ const mBark = new class {
 		}
 	}
 
+	CourseHashToDictionary(courseHash) {
+
+		var courseSubjects = courseHash.match(mBark.kCourseSubjectRegex) || [],
+			courseNumbers = courseHash.match(mBark.kCourseNumbersRegexp) || [],
+			courseDict = {};
+
+		// sanity check
+		if(courseSubjects.length != courseNumbers.length) {
+			mBark.log("Warning - courseSubjects.length["+courseSubjects.length+"] != courseNumbers.length["+courseNumbers.length+"] For: "+courseHash);
+		}
+
+		var len = courseSubjects.length < courseNumbers.length ? courseSubjects.length : courseNumbers.length;
+		for(var k = 0; k < len; ++k) {
+			
+			var val = courseNumbers[k].split(mBark.kSentinel),
+				valDict = {};
+
+			for(var n = 0; n < val.length; ++n) {
+				var v = val[n].trim();
+				if(v) valDict[v] = true;
+			}
+			
+			courseDict[courseSubjects[k].trim()] = valDict;
+		}
+
+		return courseDict;
+	}
+
 	// ---TODO: Pull these requirements from the audit in case they change
 	StudentRequirements = {
 		kCoreGPA: 2,
@@ -169,8 +200,6 @@ const mBark = new class {
 			this.coreResidentCredits = 0;
 			this.cumulativeGPA = 0;
 			this.coreGPA = 0;
-
-			this.searchCourses = []
 		}
 
 		static LoadFromData(studentData) {
@@ -204,28 +233,6 @@ const mBark = new class {
 						a.category > b.category ? 1 : 0;
 			});
 			return val; 
-		}
-
-		AddSearchCourse(course) {
-			this.searchCourses.push(course)
-		}
-
-		RemoveSearchCourse(course) {
-			const index = this.searchCourses.indexOf(course)
-			if(index > -1)
-			{
-				this.searchCourses.splice(index, 1)
-			}
-		}
-
-		GetSearchCourses()
-		{
-			return this.searchCourses;
-			//TODO alphabetize, add more information? just reference getcourses but specific indices?
-		}
-
-		ClearSearchCourses() {
-			this.searchCourses = []
 		}
 
 		async ParsePDF(path, onComplete) {
@@ -281,8 +288,6 @@ const mBark = new class {
 				const kCourseCommentRegex = new RegExp("\\([^\\)]*\\)", "gm");
 
 				const kCourseNameRegex = /(^[A-Z]+.*)/gm;
-				const kCourseNumbersRegexp = /([^A-Z]+)/gm; //Note: used after we split on kCourseSubjectRegex
-				const kCourseSubjectRegex = /([A-Z]+ )/gm;
 				const kCourseLastSubjectRegex = /([A-Z]+)(?=[^A-Z]+$)/gm;
 				
 				const kCourseFieldLength = 7;
@@ -407,33 +412,9 @@ const mBark = new class {
 
 								// mBark.log("Found: "+courseName);
 
-
-								// generate valid course that fulfill this course
-								var courseSubjects = courseName.match(kCourseSubjectRegex) || [],
-									courseNumbers = courseName.match(kCourseNumbersRegexp) || [],
-									validCourses = {};
-
-								// sanity check
-								if(courseSubjects.length != courseNumbers.length) {
-									mBark.log("Warning - courseSubjects.length["+courseSubjects.length+"] != courseNumbers.length["+courseNumbers.length+"] For: "+courseName);
-								}
-
-								var len = courseSubjects.length < courseNumbers.length ? courseSubjects.length : courseNumbers.length;
-								for(var k = 0; k < len; ++k) {
-									
-									var val = courseNumbers[k].split(mBark.kSentinel),
-										valDict = {};
-
-									for(var n = 0; n < val.length; ++n) {
-										var v = val[n].trim();
-										if(v) valDict[v] = true;
-									}
-									
-									validCourses[courseSubjects[k].trim()] = valDict;
-								}
-
 								// Keep Loading courses until the course is valid
-								var lastLoadableCourseOffset = fieldOffset;
+								var validCourses = mBark.CourseHashToDictionary(courseName),
+									lastLoadableCourseOffset = fieldOffset;
 								while(fieldOffset < fields.length) {
 									
 									var result = LoadCourse(course, fields, fieldOffset);
@@ -449,9 +430,9 @@ const mBark = new class {
 									lastLoadableCourseOffset = fieldOffset;
 									fieldOffset = result.fieldOffset + kCourseFieldLength;
 
-									var validCourse = validCourses[FindInStr(course.name, kCourseSubjectRegex).trim()];
+									var validCourse = validCourses[FindInStr(course.name, mBark.kCourseSubjectRegex).trim()];
 									if(validCourse) {
-										if(validCourse[FindInStr(course.name, kCourseNumbersRegexp).trim()]) {
+										if(validCourse[FindInStr(course.name, mBark.kCourseNumbersRegexp).trim()]) {
 											// mBark.log("BREAK: "+course.name);
 											break;
 										}
@@ -794,7 +775,6 @@ const mBark = new class {
 			mBark.GenerateMainPage();
 		});
 
-		var courses = mBark.gStudent.GetCourses()
 
 		//generate checkboxes
 
@@ -802,6 +782,7 @@ const mBark = new class {
 		var content = document.getElementById(mBark.Dom.kClassTableBodyId);
 		content.style.display = "";		
 		content.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th> <th>Select</th></tr>";
+
 
 		//TODO Make button search categories
 
@@ -844,27 +825,50 @@ const mBark = new class {
 
 		button.innerHTML = buttonText;
 		button.disabled = true;
+
+		var searchHashes = [];
 		button.addEventListener("click", function(e) {
 
-			mBark.log(e)
-			//TODO OZAN  the classes to search for can be retrieved with mBark.gStudent.GetSearchCourses(), implement a function that queries the LSA course guide for those and redirects
-			mBark.log("searching for selected classes")
+			mBark.log(category);
+			mBark.log("Class hashes are ");
+			mBark.log(searchHashes);
 
-			mBark.log("Classes are " + mBark.gStudent.GetSearchCourses())
-			mBark.log(category)
-			//if category == "CS Major Core" || category == "Common Requirements" , then search selected classes, otherwise search the whole category
-			//var category = e.currentTarget.getAttribute("category");
-			//mBark.log("CAT: "+category);
+			var hashes = searchHashes,
+				courseSearchStrs = [];
+
+			// TODO: throw course.name into the mix too just in case student is searching In progress not-standard course [Ex eecs270 -> eecs280]
+			for(var i = 0; i < hashes.length; ++i) {
+				var hash = hashes[i],
+					courseDict = mBark.CourseHashToDictionary(hash),
+					courseList = Object.entries(courseDict);
+
+				// flaten course dict and merge with courseSearchStrs
+				for(var j = 0; j < courseList.length; ++j) {
+					var subject = courseList[j][0],
+						numbers = Object.entries(courseList[j][1]);
+
+					for(var k = 0; k < numbers.length; ++k) {
+						courseSearchStrs.push(subject+" "+numbers[k][0]);
+					}
+				}
+			}
 			
-			//mBark.GenerateCategoryPage(category);
+			var url = mBark.getClasses(courseSearchStrs);
+			mBark.log(url);
+
+			// chrome.tabs.create({url: url, active: true}, function(e) {
+			// 	mBark.log(e);
+			// });
 		});
 		buttonDiv.appendChild(button);
 
 
 		function updateButton() {
-			button.disabled = !mBark.gStudent.searchCourses.length;			
+			// TODO: don't disable category searches button
+			button.disabled = !searchHashes.length;
 		}
 
+		var courses = mBark.gStudent.GetCourses()
 		for(var i = 0; i < courses.length; ++i)
 		{
 			var course = courses[i],
@@ -888,23 +892,27 @@ const mBark = new class {
 						input = document.createElement("input");
 
 					input.type = 'checkbox';
-					input.disabled = courseArray[j].status == mBark.CourseStatus.kCompleted;
 
-					input.setAttribute("courseName", courseArray[j].name);
+					// WARN: disabled for debugging
+					// input.disabled = courseArray[j].status == mBark.CourseStatus.kCompleted; 
+
+					input.setAttribute("courseHash", courseArray[j].hash);
 					input.addEventListener("click", function(e) {
-						
-						mBark.log(e);
-						mBark.log(e.currentTarget);
 
-						var elmt = e.currentTarget; 
-						
-						var courseName = elmt.getAttribute("courseName");
+						var elmt = e.currentTarget,
+							courseHash = elmt.getAttribute("courseHash");
+
 						if(elmt.checked) {
-							mBark.log("Added course " + courseName  + " to search");
-							mBark.gStudent.AddSearchCourse(courseName);						
+	
+							searchHashes.push(courseHash);						
+							mBark.log("Added hash " + courseHash  + " to search");
+	
 						} else {
-							mBark.log("Removed course " + courseName + " from search");
-							mBark.gStudent.RemoveSearchCourse(courseName);							
+							var index = searchHashes.indexOf(courseHash);
+							if(index > -1) {
+								searchHashes.splice(index, 1);
+								mBark.log("Removed hash " + courseHash + " from search");
+							}
 						}
 
 						updateButton();
@@ -932,8 +940,6 @@ const mBark = new class {
 		categoryPage.style.display = "none";
 		content.style.display = "none"
 		mainPage.style.display = "";
-
-		mBark.gStudent.ClearSearchCourses();
 
 		table.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th></tr>";
 
