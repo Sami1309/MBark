@@ -97,6 +97,12 @@ const mBark = new class {
 		}
 	} 
 
+	RecreateEventListener(element, eventName, func) {
+		var elementClone = element.cloneNode(true);
+		elementClone.addEventListener(eventName, func);
+		element.parentNode.replaceChild(elementClone, element);		
+	}
+
 
 	Course = class {
 		constructor(category, name, credits) {
@@ -783,13 +789,9 @@ const mBark = new class {
 
 		var title = document.getElementById(mBark.Dom.kCategoryTitleId);
 		title.innerText = category;
-							 
-
-		var backButton = document.getElementById(mBark.Dom.kCategoryBackButtonId);
-		backButton.addEventListener("click", function(e) {
-
+				
+		mBark.RecreateEventListener(document.getElementById(mBark.Dom.kCategoryBackButtonId), "click", function(e) {
 			mBark.GenerateMainPage();
-
 		});
 
 		var courses = mBark.gStudent.GetCourses()
@@ -888,11 +890,7 @@ const mBark = new class {
 					input.type = 'checkbox';
 					input.disabled = courseArray[j].status == mBark.CourseStatus.kCompleted;
 
-					mBark.log(courseArray[j].status);
-					mBark.log(courseArray[j].status == mBark.CourseOpenStatus.kCompleted);
-
 					input.setAttribute("courseName", courseArray[j].name);
-					
 					input.addEventListener("click", function(e) {
 						
 						mBark.log(e);
@@ -1035,14 +1033,9 @@ const mBark = new class {
 
 		document.getElementById(mBark.Dom.kAuditCTPId).innerHTML = RequirementSpan(mBark.gStudent.creditsTowardProgram, mBark.StudentRequirements.kCreditsTowardsProgram)+" ("+mBark.gStudent.creditsInProgress+" In Progress)";
 
-		// Note: replace the button with a clone so we don't keep adding event listeners
-		var refreshButton = document.getElementById(mBark.Dom.kAuditRefreshId),
-			refreshButtonClone = refreshButton.cloneNode(true);
-
-		refreshButtonClone.addEventListener("click", function(e){
+		mBark.RecreateEventListener(document.getElementById(mBark.Dom.kAuditRefreshId), "click", function(e) {
 			mBark.UpdateAudit();
 		});
-		refreshButton.parentNode.replaceChild(refreshButtonClone, refreshButton);
 	}
 
 	DisplayText() {
@@ -1050,6 +1043,8 @@ const mBark = new class {
 	}
 
 	UpdateLSASearch() {
+
+			// --TODO: CHECK FOR BUGS
 
 		var requiredCourses = document.getElementsByClassName("reqCourse");
 
@@ -1161,24 +1156,6 @@ const mBark = new class {
 
 		mBark.log("Init LSA Search");
 	}
-
-	InitCollapsables() {
-		var coll = document.getElementsByClassName("collapsableButton");
-		var i;
-
-		for (i = 0; i < coll.length; i++) {
-		  coll[i].addEventListener("click", function() {
-		    this.classList.toggle("active");
-		    var content = this.nextElementSibling;
-		    if (content.style.maxHeight){
-		      content.style.maxHeight = null;
-		    } else {
-		      content.style.maxHeight = content.scrollHeight + "px";
-		    } 
-		  });
-		}
-	}
-
 
 	InitMessgePump() {
 		// setup message pump for cross script communication
