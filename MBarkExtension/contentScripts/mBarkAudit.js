@@ -40,7 +40,9 @@ if(ParseUrl(location.href).getData["_MBARK_"]) {
 
 	html.className = "mBarkWrapper";
 	loadingDiv.className = "mBarkLoading";
-	loadingDiv.innerHTML = "<p>Generating Course Audit PDF...</p>";
+	loadingDiv.innerHTML =  "<div class='mBarkSpinner'></div>" +
+							"<p class='mBarkHeader'>Fetching Course Data...</p>" +
+							"<p>(This takes a few seconds)</p>";
 	html.appendChild(loadingDiv);
 
 

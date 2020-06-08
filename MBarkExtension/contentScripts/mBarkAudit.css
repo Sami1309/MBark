@@ -3,7 +3,7 @@
 	overflow: hidden;
     height: -webkit-fill-available;
     width: -webkit-fill-available;
-    cursor: wait;
+    user-select: none;
 }
 
 .mBarkLoading {
@@ -12,11 +12,48 @@
     position: absolute;
     background-color: ghostwhite;
     z-index: 100;
+
     display: flex;
+    flex-direction: column;
     align-items: center;
-    text-align: center;
+    justify-content: center;
 }
 
 .mBarkLoading p {
-	margin: auto;
+	margin: 0;
+    padding: 2px;
+}
+
+.mBarkHeader {
+    font-size: 1.15em;
+    font-weight: bold;
+    padding: 0;
+}
+
+.mBarkSpinner {
+    width: 50px;
+    height: 50px;
+    margin: 13px;
+    position: relative;
+
+    border: 7px solid;
+    border-radius: 50%;
+    border-color: #00008b47;
+    border-left-color: darkblue;
+
+    background: transparent;
+
+    animation-name: mBarkRotateSpinner;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+@keyframes mBarkRotateSpinner {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
