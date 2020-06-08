@@ -1297,32 +1297,6 @@ const mBark = new class {
 			url = url + str[0] + "&catalog=" + str[1];
 		}
 		mBark.log(url);
-		// send out webrequest
-		var xhttp = new XMLHttpRequest();
-	
-		xhttp.onreadystatechange = function() {
-			if(this.readyState == XMLHttpRequest.DONE) {
-						
-				// request succeeded
-				if(this.status == 200) {
-							
-					// parse the http response into a separate document 
-					var responseDocument = document.implementation.createHTMLDocument("responeDocument");
-					responseDocument.write(this.responseText);
-
-					mBark.log(responseDocument);
-
-					xhttp.abort();
-							
-
-				} else {
-					mBark.log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
-				}
-			}
-		};
-		xhttp.open("GET", url, true);
-		xhttp.send();
-
 	}
 
 	InitMessgePump() {
