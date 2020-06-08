@@ -13,10 +13,10 @@ const mBark = new class {
 		return str.substr(1);
 	}
 
-	// Note: This strips out empty elements [IE: 'a, or b' -> 'a|b' instead of 'a||b']
+	// Note: This strips out empty elements [IE: 'a, or b,' -> 'a|b' instead of 'a||b|']
 	TextToKSentinelStr(text) { 
 		if(text.indexOf(mBark.kSentinel) != -1) mBark.log("Text String["+text+"] has mBark.kSentinel["+mBark.kSentinel+"] in it!"); //sanity check
-		return text.replace(/\s*(?:,|(?:(?<=\s|^)or(?=\s|$)))\s*/gm, mBark.kSentinel).replace(new RegExp("(?:"+mBark.kSentinelRegex+"){2,}", "gm"), mBark.kSentinel); 
+		return text.replace(/\s*(?:,|(?:(?<=\s|^)or(?=\s|$)))\s*/gm, mBark.kSentinel).replace(new RegExp("(?:"+mBark.kSentinelRegex+"){2,}", "gm"), mBark.kSentinel).replace(new RegExp(mBark.kSentinelRegex+"+$", "gm"), ""); 
 	}
 
 	kSentinelStrToText(str)  { 
@@ -264,8 +264,15 @@ const mBark = new class {
 				const kCompleteAndProgressRegex = /([0-9]*\.?[0-9]*)(?=\scompleted\/in-progress)/gm;
 
 				const kFieldRegex = new RegExp("((?<="+mBark.kSentinelRegex+")[^"+mBark.kSentinelRegex+"]*)", "gm");
-				const kCourseRegex = new RegExp("(?<=^"+mBark.kSentinelRegex+")(?:(?:or )?(?:(?:[A-Z]+ [0-9]+)(?:(?:, | or | \\([^\\)]*\\), )[0-9]+)*)(?:, )?)+", "gm");
+				const kCourseRegex = new RegExp("(?<=^"+mBark.kSentinelRegex+")(?:(?:or )?(?:(?:[A-Z]+ [0-9]+)(?:(?:, | or |,? and | \\([^\\)]*\\), )[0-9]+)*)(?:, )?)+", "gm");
 				const kCourseCommentRegex = new RegExp("\\([^\\)]*\\)", "gm");
+
+				const kCourseNameRegex = /(^[A-Z]+.*)/gm;
+				const kCourseNumbersRegexp = /([^A-Z]+)/gm; //Note: used after we split on kCourseSubjectRegex
+				const kCourseSubjectRegex = /([A-Z]+ )/gm;
+				const kCourseLastSubjectRegex = /([A-Z]+)(?=[^A-Z]+$)/gm;
+				
+				const kCourseFieldLength = 7;
 
 
 				//Note: makes life easier to be guaranteed a string result  
@@ -353,19 +360,93 @@ const mBark = new class {
 
 				function processCourses(searchStr, numberOfSearchResults=1) {
 					
-					// process Common Requirements - TODO: pull student out to function so we can reuese - add offset for multiline courses?
 					for(var j = 0; j < numberOfSearchResults; ++j) {
 
+						courseSearchLoop: 
 						for(var str = fastforward(searchStr); str; str = fastforward.next()) {
 
-							var courseStr = FindInStr(str, kCourseRegex),
-								courseName = mBark.TextToKSentinelStr(courseStr.replace(kCourseCommentRegex, "")),
-								course = student.courses[courseName];
-							
-							if(!course) break;
+							var courseStrs = FindInStr(str, kCourseRegex),
+								fields = str.replace(courseStrs, "").match(kFieldRegex), //Note: strip course name to remote text-group breaks caused by multiline course names [Ex: MDE],
+								fieldOffset = 1;
 
-							var fields = str.replace(courseStr, "").match(kFieldRegex); //Note: strip course name to remote text-group breaks caused by multiline course names [Ex: MDE],
-							if(!LoadCourse(course, fields, 1)) break;
+							// build courses  from 'and' split [Ex: {'CHEM 125|126', '130'} -> {'CHEM 125|126', 'CHEM 130'}]
+							courseStrs = courseStrs.replace(kCourseCommentRegex, "").split("and");
+							// mBark.log(str);
+							// mBark.log(courseStrs);
+							
+							var oldSubject = "";
+							for(var i = 0; i < courseStrs.length; ++i) {
+
+								var courseStr =  courseStrs[i].trim(),
+									courseKSentinelStr = mBark.TextToKSentinelStr(courseStr),
+									courseName = FindInStr(courseKSentinelStr, kCourseNameRegex);
+
+								// cache last subject or build course name from previous subject if subject is not found
+								if(courseName) oldSubject = FindInStr(courseName, kCourseLastSubjectRegex);
+								else courseName = oldSubject+" "+courseKSentinelStr;
+
+								var course = student.courses[courseName];
+								if(!course) {
+
+									mBark.log("NOT Found: "+courseName);
+									break courseSearchLoop;
+								}
+
+								mBark.log("Found: "+courseName);
+
+
+								// generate valid course that fulfill this course
+								var courseSubjects = courseName.match(kCourseSubjectRegex) || [],
+									courseNumbers = courseName.match(kCourseNumbersRegexp) || [],
+									validCourses = {};
+
+								// sanity check
+								if(courseSubjects.length != courseNumbers.length) {
+									mBark.log("Warning - courseSubjects.length["+courseSubjects.length+"] != courseNumbers.length["+courseNumbers.length+"] For: "+courseName);
+								}
+
+								var len = courseSubjects.length < courseNumbers.length ? courseSubjects.length : courseNumbers.length;
+								for(var k = 0; k < len; ++k) {
+									
+									var val = courseNumbers[k].split(mBark.kSentinel),
+										valDict = {};
+
+									for(var n = 0; n < val.length; ++n) {
+										var v = val[n].trim();
+										if(v) valDict[v] = true;
+									}
+									
+									validCourses[courseSubjects[k].trim()] = valDict;
+								}
+
+								// Keep Loading courses until the course is valid
+								var lastLoadableCourseOffset = fieldOffset;
+								while(fieldOffset < fields.length) {
+									
+									var result = LoadCourse(course, fields, fieldOffset);
+									if(!result) {
+
+										// Reload last known good course - really should just cache the result, but to lazy to write a copy method
+										// Warn: if copy method is written know that courses are loaded from memory as serialized data [not an instance of Course] 
+										// 		so the copy function needs to be not part of the course class  
+										LoadCourse(course, fields, lastLoadableCourseOffset);
+										break;
+									}
+	
+									lastLoadableCourseOffset = fieldOffset;
+									fieldOffset = result.fieldOffset + kCourseFieldLength;
+
+									var validCourse = validCourses[FindInStr(course.name, kCourseSubjectRegex).trim()];
+									if(validCourse) {
+										if(validCourse[FindInStr(course.name, kCourseNumbersRegexp).trim()]) {
+											// mBark.log("BREAK: "+course.name);
+											break;
+										}
+									}
+									
+									// mBark.log("CONTINUE: "+course.name);
+								}
+							}
 						}
 					}
 				}
@@ -387,7 +468,7 @@ const mBark = new class {
 							var vCourse = vCourses[m],
 								vOffset = vCourseOffsets[m] + 1, // ignore the name field
 								minFields = vOffset + 3;
-							mBark.log(vCourse)
+
 							var fields = str.match(kFieldRegex);
 
 							if(fields.length < minFields) {
@@ -410,7 +491,7 @@ const mBark = new class {
 							vCourse.creditsCompleted = 0;
 							vCourse.creditsInProgress = 0;
 
-							for(var offset = vOffset; offset < fields.length; offset+=7 ) {
+							for(var offset = vOffset; offset < fields.length; offset+=kCourseFieldLength) {
 								var result = LoadCourse(new mBark.Course(), fields, offset);
 								if(!result) break;
 
@@ -443,7 +524,7 @@ const mBark = new class {
 				student.cumulativeGPA = parseFloat(FindInStr(str, new RegExp("(?<="+mBark.kSentinelRegex+"GPA"+mBark.kSentinelRegex+": )([0-9]+\.?[0-9]*)", "gm")));
 
 				// Process Core box 
-				processCourses(/\(RQ (6667|4789|4634|4685)\)/gm, 4);
+				processCourses(/\(RQ (6667|(?:4789|4635)|4634|4685)\)/gm, 4);
 
 				// Process Intellectual Breadth box
 				processVCourses({
@@ -672,8 +753,7 @@ const mBark = new class {
 					new mBark.VirtualCourse(mBark.CourseCategories.kGenElective, "General Elective", 	"100+", 12), //TODO: Sam Confirm this
 					new mBark.VirtualCourse(mBark.CourseCategories.kNotCounted,  "Not Counted", 		"100+", 0),
 				]);
-
-				mBark.SaveMemory();    	
+				
 				mBark.log("Created default student");
 	    	}
 
@@ -1089,7 +1169,16 @@ const mBark = new class {
 		window.addEventListener("load", function(e) { 
 			mBark.log("Popup Ready!");
 
+			// // WARNING: DEBUGGING!
+			// mBark.ResetMemory();
+
 			mBark.InitStudent(function(initFromMemory) {
+
+				// // WARNING: DEBUGGING
+				// mBark.gStudent.ParsePDF("../files/auditSamG.pdf", function() {
+				// 	mBark.UpdateStudentDependencies()
+				// });
+
 
 				if(initFromMemory) mBark.UpdateStudentDependencies();
 				else mBark.UpdateAudit();
