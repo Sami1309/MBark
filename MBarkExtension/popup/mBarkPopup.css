@@ -1,7 +1,7 @@
 
 .wrapper {
-	width: max-content;
-    height: max-content;
+	width: 100%;
+    height: 100%;
     text-align: center;
 	position: relative;
 }
@@ -13,33 +13,32 @@
 }
 
 #creditTable {
+    background-color: lightyellow;
 	text-align: center;
+    width: 100%;
 }
 
-#creditTable tr > * {
-    padding: 0 5px;
+#creditTableBody tr th {
+    background-color: burlywood;
 }
 
-#creditTable tr td:first-child {
+#creditTableBody tr > * {
+    margin: 0 5px;
+    padding: 0;
+}
+
+#creditTableBody tr td:first-child {
 	text-align: left;
 }
+
+/*#creditTableBody tr td {
+    pointer-events: none;
+}
+*/
 
 #classTable {
 	text-align: center;
 }
-
-#creditTable tr > * {
-	padding: 0 5px;
-}
-
-#creditTable tr td:first-child {
-	text-align: left;
-}
-
-/*#creditTable tr td {
-    pointer-events: none;
-}
-*/
 .reqCourse {
 	cursor: pointer;
 }
@@ -135,4 +134,14 @@
     pointer-events: none;
 }
   
+.statusNotTaken {
+    color: black;
+}
 
+.statusInProgress {
+    color: darkorange;
+}
+
+.statusCompleted {
+    color: darkgreen;
+}

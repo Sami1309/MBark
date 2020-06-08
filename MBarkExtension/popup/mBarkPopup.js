@@ -57,8 +57,8 @@ const mBark = new class {
 	};
 
 	Dom = {
-		kBrowserId: 	"browser",
-		kCreditTableId: "creditTable",
+		kBrowserId: 		"browser",
+		kCreditTableBodyId: "creditTableBody",
 
 		kAuditInfoId: 		"auditInfo",
 		kAuditNameId: 		"auditName",
@@ -78,6 +78,16 @@ const mBark = new class {
 	};
 
 	kAuditURL = "https://webapps.lsa.umich.edu/UGStuFileV2/App/AuditSumm/MyLSAAudChklst.aspx?_MBARK_=1";
+
+
+	CourseStatusDomClass(status) {
+		switch(status) {
+			case mBark.CourseStatus.kNotTaken: return "statusNotTaken";
+			case mBark.CourseStatus.kCompleted: return "statusCompleted";
+			case mBark.CourseStatus.kInProgress: return "statusInProgress";
+			default: return "";
+		}
+	} 
 
 
 	Course = class {
@@ -753,7 +763,7 @@ const mBark = new class {
 					new mBark.VirtualCourse(mBark.CourseCategories.kGenElective, "General Elective", 	"100+", 12), //TODO: Sam Confirm this
 					new mBark.VirtualCourse(mBark.CourseCategories.kNotCounted,  "Not Counted", 		"100+", 0),
 				]);
-				
+
 				mBark.log("Created default student");
 	    	}
 
@@ -875,7 +885,7 @@ const mBark = new class {
 
 		var categoryPage = document.getElementById(mBark.Dom.kCategoryPageId),
 			mainPage 	 = document.getElementById(mBark.Dom.kMainPageId),
-			table = document.getElementById(mBark.Dom.kCreditTableId),
+			table = document.getElementById(mBark.Dom.kCreditTableBodyId),
 			content = document.getElementById(mBark.Dom.kClassTableId);
 
 		categoryPage.style.display = "none";
@@ -901,7 +911,8 @@ const mBark = new class {
 					name: category,
 					status: mBark.CourseStatus.kNotTaken,
 					creditsRequired: 0,
-					creditsCompleted: 0
+					creditsCompleted: 0,
+					creditsInProgress: 0
 				};
 			}
 
@@ -910,22 +921,26 @@ const mBark = new class {
 				
 				course = courseArray[j];
 	
-				var status = categories[category].status;
-				switch(status) {
-					case mBark.CourseStatus.kNotTaken: status = course.status;
+				// add up status
+				switch(categories[category].status) {
+					case mBark.CourseStatus.kNotTaken: categories[category].status = course.status;
 					break;
 
 					case mBark.CourseStatus.kCompleted: {
 						if(course.status == mBark.CourseStatus.kInProgress || mBark.CourseStatus.kNotTaken) {
-							status = mBark.CourseStatus.kInProgress;
+							categories[category].status = mBark.CourseStatus.kInProgress;
 						} 
 					} break;
 				}
 
-				categories[category].status = status;
+				// add up credits
 				categories[category].creditsRequired+= course.credits;
-				if(course.status == mBark.CourseStatus.kCompleted) {
-					categories[category].creditsCompleted+= course.credits;
+				switch(course.status) {
+					case mBark.CourseStatus.kCompleted: categories[category].creditsCompleted+= course.credits;
+					break;
+
+					case mBark.CourseStatus.kInProgress: categories[category].creditsInProgress+= course.credits;
+					break;
 				}
 			}
 		}
@@ -939,14 +954,16 @@ const mBark = new class {
 
 			row.className = "reqCourse";
 			row.setAttribute("category", category.name);
-			row.innerHTML = "<td>"+category.name+"</td><td>"+category.status+"</td><td>"+category.creditsCompleted+"/"+category.creditsRequired+"</td>";
+			
+			row.innerHTML = "<td>"+category.name+"</td>" +
+							"<td>"+category.status+"</td>" + 
+							"<td class="+mBark.CourseStatusDomClass(category.status)+">"+(category.creditsCompleted + category.creditsInProgress)+"/"+category.creditsRequired+"</td>";
+			
 			table.appendChild(row);
 
 			row.addEventListener("click", function(e) {
 
 				var category = e.currentTarget.getAttribute("category");
-				mBark.log("CAT: "+category);
-				
 				mBark.GenerateCategoryPage(category);
 			});
 		}
@@ -1138,7 +1155,7 @@ const mBark = new class {
 		mBark.ResetMemory(); //flush old student in case its corrupt
 		mBark.InitStudent(function(initFromMemory) {
 	
-			var creditTable = document.getElementById(mBark.Dom.kCreditTableId),
+			var creditTable = document.getElementById(mBark.Dom.kCreditTableBodyId),
 				auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
 			
 				creditTable.style.display = "none";
