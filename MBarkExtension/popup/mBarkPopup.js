@@ -70,9 +70,10 @@ const mBark = new class {
 		kMainPageId: 			"mainPage",
 		kCategoryPageId: 		"categoryPage",
 		kContentPageId: 		"content",
-		kClassTableId: 			"classTable",
-		kCategoryPageId: 		"categoryPage",
+		kClassTableBodyId: 		"classTableBody",
+		kCategoryTitleId: 		"categoryTitle",
 		kCategoryBackButtonId: 	"categoryBackButton",
+		kClassSearchButtonDivId: 	"classSearchButtonDiv",
 
 		kAuditIframeName: "auditIframe",
 	};
@@ -780,10 +781,9 @@ const mBark = new class {
 		categoryPage.style.display = "";
 
 
-		categoryPage.innerHTML = "<div id='"+mBark.Dom.kCategoryBackButtonId+"'></div>" + 
-							 "<h1 class='banner'>"+category+"</h1>";
+		var title = document.getElementById(mBark.Dom.kCategoryTitleId);
+		title.innerText = category;
 							 
-
 
 		var backButton = document.getElementById(mBark.Dom.kCategoryBackButtonId);
 		backButton.addEventListener("click", function(e) {
@@ -797,11 +797,71 @@ const mBark = new class {
 		//generate checkboxes
 
 		//generate search button
-		var content = document.getElementById(mBark.Dom.kClassTableId);
-
-		content.style.display = "";
-		
+		var content = document.getElementById(mBark.Dom.kClassTableBodyId);
+		content.style.display = "";		
 		content.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th> <th>Select</th></tr>";
+
+		//TODO Make button search categories
+
+		var buttonText = "",
+			searchFn = undefined;
+		switch(category) {
+
+			case mBark.CourseCategories.kULCS: {
+				buttonText = "Search ULCS";
+			} break;
+
+			case mBark.CourseCategories.kFlexTech: {
+				buttonText = "Search FlexTech";
+			} break;
+			case mBark.CourseCategories.kGenElective: {
+				buttonText = "Search Electives";
+			} break;
+
+			case mBark.CourseCategories.kHumanities: {
+				buttonText = "Search Humanities";
+			} break;
+
+			case mBark.CourseCategories.kIntellectualBreadth: {
+				buttonText = "Search LSA/HU";
+			} break;
+
+			case mBark.CourseCategories.kIntellectualBreadth300: {
+				buttonText = "Search LSA/HU 300+";
+
+			} break;
+
+			default: {
+				buttonText = "Search Classes";
+			}			
+		}
+
+		var buttonDiv = document.getElementById(mBark.Dom.kClassSearchButtonDivId),
+			button = document.createElement("button");		
+		buttonDiv.innerHTML = "";
+
+		button.innerHTML = buttonText;
+		button.disabled = true;
+		button.addEventListener("click", function(e) {
+
+			mBark.log(e)
+			//TODO OZAN  the classes to search for can be retrieved with mBark.gStudent.GetSearchCourses(), implement a function that queries the LSA course guide for those and redirects
+			mBark.log("searching for selected classes")
+
+			mBark.log("Classes are " + mBark.gStudent.GetSearchCourses())
+			mBark.log(category)
+			//if category == "CS Major Core" || category == "Common Requirements" , then search selected classes, otherwise search the whole category
+			//var category = e.currentTarget.getAttribute("category");
+			//mBark.log("CAT: "+category);
+			
+			//mBark.GenerateCategoryPage(category);
+		});
+		buttonDiv.appendChild(button);
+
+
+		function updateButton() {
+			button.disabled = !mBark.gStudent.searchCourses.length;			
+		}
 
 		for(var i = 0; i < courses.length; ++i)
 		{
@@ -818,75 +878,58 @@ const mBark = new class {
 
 					row.className = "myCourse";
 				
-					row.innerHTML = "<td>"+courseArray[j].name+"</td><td>"+
-						courseArray[j].status+"</td><td>"+courseArray[j].credits+
-						"</td> <input type='checkbox' "+
-						(courseArray[j].status == 'Completed' ? 'disabled' : '') +
-						 " id='"+courseArray[j].name+"' >";
-						 
+					row.innerHTML = "<td>"+courseArray[j].name+"</td>" +
+									"<td class='"+mBark.CourseStatusDomClass(courseArray[j].status)+"'>"+courseArray[j].status+"</td><td>"+courseArray[j].credits;
+
+					
+					var td = document.createElement("td"),
+						input = document.createElement("input");
+
+					input.type = 'checkbox';
+					input.disabled = courseArray[j].status == mBark.CourseStatus.kCompleted;
+
+					mBark.log(courseArray[j].status);
+					mBark.log(courseArray[j].status == mBark.CourseOpenStatus.kCompleted);
+
+					input.setAttribute("courseName", courseArray[j].name);
+					
+					input.addEventListener("click", function(e) {
+						
+						mBark.log(e);
+						mBark.log(e.currentTarget);
+
+						var elmt = e.currentTarget; 
+						
+						var courseName = elmt.getAttribute("courseName");
+						if(elmt.checked) {
+							mBark.log("Added course " + courseName  + " to search");
+							mBark.gStudent.AddSearchCourse(courseName);						
+						} else {
+							mBark.log("Removed course " + courseName + " from search");
+							mBark.gStudent.RemoveSearchCourse(courseName);							
+						}
+
+						updateButton();
+
+					});
+
+					td.appendChild(input);
+					row.appendChild(td);
+
 					content.appendChild(row);
 				}
 				
 			}
 		}
-		//TODO ISSUE event listener added each time so there are multiple ones if user exits and re enters menus, array populated n times
-		//if(content.getAttribute('listener') !== 'true')
-		//{
-			content.addEventListener("click", function(e) {
-
-		//}
-		
-			if(e.path[0].localName=="input")
-			{
-				mBark.log(e.path[0].id)
-
-				if(e.path[0].checked)
-				{
-					//add course
-					mBark.log("Added course " + e.path[0].id + " to search")
-					mBark.gStudent.AddSearchCourse(e.path[0].id)
-				}
-				else
-				{
-					//remove course
-					mBark.log("Removed course " + e.path[0].id + " from search")
-					mBark.gStudent.RemoveSearchCourse(e.path[0].id)
-				}
-
-			}
-		});
-
-		//TODO button now works for courses that are listed despite not being taken,
-		var button = document.createElement("button")
-
-		button.innerHTML = "Search Selected Classes"
-
-		content.append(button)
-
-		button.addEventListener("click", function(e) {
-
-			mBark.log(e)
-			//TODO OZAN  the classes to search for can be retrieved with mBark.gStudent.GetSearchCourses(), implement a function that queries the LSA course guide for those and redirects
-			mBark.log("searching for selected classes")
-
-			mBark.log("Classes are " + mBark.gStudent.GetSearchCourses())
-			mBark.log(category)
-			//if category == "CS Major Core" || category == "Common Requirements" , then search selected classes, otherwise search the whole category
-			//var category = e.currentTarget.getAttribute("category");
-			//mBark.log("CAT: "+category);
-			
-			//mBark.GenerateCategoryPage(category);
-		});
-
-
 	}
+
 
 	GenerateMainPage() {
 
 		var categoryPage = document.getElementById(mBark.Dom.kCategoryPageId),
 			mainPage 	 = document.getElementById(mBark.Dom.kMainPageId),
 			table = document.getElementById(mBark.Dom.kCreditTableBodyId),
-			content = document.getElementById(mBark.Dom.kClassTableId);
+			content = document.getElementById(mBark.Dom.kClassTableBodyId);
 
 		categoryPage.style.display = "none";
 		content.style.display = "none"
@@ -1155,22 +1198,16 @@ const mBark = new class {
 		mBark.ResetMemory(); //flush old student in case its corrupt
 		mBark.InitStudent(function(initFromMemory) {
 	
-			var creditTable = document.getElementById(mBark.Dom.kCreditTableBodyId),
+			var content = document.getElementById(mBark.Dom.kContentPageId),
 				auditInfo = document.getElementById(mBark.Dom.kAuditInfoId);
 			
-				creditTable.style.display = "none";
-				auditInfo.style.display = "none";
+				content.style.display = "none";
 
 				mBark.gAuditRequester.RequestAudit(function(pdf) {
 					
-					creditTable.style.display = "";
-					auditInfo.style.display = "";
-					creditTable.innerText = "Processing...";
-					
+					content.style.display = "";
+
 					mBark.gStudent.ParsePDF(pdf, function() {
-
-						creditTable.innerText = "";
-
 						mBark.UpdateStudentDependencies();
 						mBark.SaveMemory();
 					});

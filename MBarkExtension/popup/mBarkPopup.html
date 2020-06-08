@@ -9,51 +9,61 @@
 
   <body>
 
-  	<div class="wrapper">
-	    
-	    	<div id="auditInfo" class="banner">
-	    		
-	    		<div id="auditRefresh"></div>
-
-	    		<div class='auditRow'>
-	    			<p id="auditName"></p>
-	    		</div>
-	    		
-	    		<div class='auditRow'>
-	    			<p>Last Audit:</p>
-	    			<p id="auditDate"></p>
-	    		</div>
-	    		
-	    		<div class="auditRow">	
-	    			
-	    			<div class="auditCol">
-	    				<p>Credits Toward Program</p>
-	    				<p id="auditCTP"></p>
-	    			</div>
-
-	    			<div class="auditCol">
-	    				<p>Credits In Progress</p>
-	    				<p id="auditCIP"></p>
-	    			</div>
-	    		</div>
-	    	</div>
-
-	    <div id="mainPage" class="wrapper">
-
-	    	<table id='creditTable'>
-	    		<tbody id="creditTableBody"></tbody>
-	    	</table>
-
-	    	<div id="browser"></div>
-	    </div>
-
-	    <div id="categoryPage"> 
+	<div id="browser"></div>
+  	
+  	<div id="content" class="wrapper">
 		
-		</div>
-		<table> 
-			<tbody id='classTable'></tbody>
-		</table>
+		<div id="auditInfo" class="banner">
+			
+			<div id="auditRefresh"></div>
 
+			<div class='auditRow'>
+				<p id="auditName"></p>
+			</div>
+			
+			<div class='auditRow'>
+				<p>Last Audit:</p>
+				<p id="auditDate"></p>
+			</div>
+			
+			<div class="auditRow">	
+				
+				<div class="auditCol">
+					<p>Credits Toward Program</p>
+					<p id="auditCTP"></p>
+				</div>
+
+				<div class="auditCol">
+					<p>Credits In Progress</p>
+					<p id="auditCIP"></p>
+				</div>
+			</div>
+		</div>
+
+    	<div class="wrapper">
+		    <div id="mainPage" class="wrapper">
+
+		    	<table id='creditTable'>
+		    		<tbody id="creditTableBody"></tbody>
+		    	</table>
+
+		    </div>
+
+		    <div id="categoryPage"> 
+
+		    	<div id="categoryHeader">
+		    		<div id="categoryBackButton"></div>
+			    	<h1 id="categoryTitle" class="banner"></h1>
+			    </div>
+
+				<table id='classTable'> 
+					<tbody id='classTableBody'></tbody>
+				</table>
+
+    			<div id="classSearchButtonDiv" class="wrapper"></div>
+			</div>
+
+    	</div>
   	</div>
 
   </body>

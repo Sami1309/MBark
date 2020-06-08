@@ -1,7 +1,11 @@
 
 .wrapper {
-	width: 100%;
+
+    width: 100%;
     height: 100%;
+    min-width: max-content;
+    min-height: max-content;
+    
     text-align: center;
 	position: relative;
 }
@@ -12,33 +16,47 @@
     min-width: max-content;
 }
 
-#creditTable {
+#creditTable, #classTable {
+    width: 100%;
+    min-width: max-content;
+
     background-color: lightyellow;
 	text-align: center;
-    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.1em;
 }
 
-#creditTableBody tr th {
+#creditTableBody tr:first-child, #classTable tbody tr:first-child {
     background-color: burlywood;
+    font-size: 1.12em;
+    font-weight: 500;        
 }
 
-#creditTableBody tr > * {
-    margin: 0 5px;
-    padding: 0;
+#creditTableBody tr > *, #classTable tbody tr > * {
+    padding: 3px 10px;
+    user-select: none;
 }
 
-#creditTableBody tr td:first-child {
+#creditTableBody tr:hover {
+    color: #009ac7;
+    background-color: gainsboro;
+}
+
+#creditTableBody tr:first-child:hover {
+    color: black;
+    background-color: burlywood;    
+}
+
+#creditTableBody tr td:first-child, .myCourse td:first-child {
 	text-align: left;
+    font-weight: 600;
 }
 
-/*#creditTableBody tr td {
-    pointer-events: none;
-}
-*/
 
-#classTable {
-	text-align: center;
+#creditTableBody tr td:last-child, .myCourse  td:last-child {
+    font-weight: 600;
 }
+
 .reqCourse {
 	cursor: pointer;
 }
@@ -66,7 +84,7 @@
     font-family: monospace;
     font-weight: bolder;
     transform: rotateZ(0deg);
-    font-size: 1.5em;
+    font-size: 20px;
     cursor: pointer;
 }
 
@@ -112,6 +130,11 @@
     content: "\2212";
 }
 
+#categoryHeader {
+    display: flex;
+    align-items: center;
+}
+
 #categoryBackButton::before {
     content: '\1f844';
     font-size: 20px;
@@ -120,18 +143,18 @@
     cursor: pointer;
 }
 
-#categoryPage  {
-    display: flex;
-    align-items: center;
-    background-color: lightblue;
-    padding: 5px;
+.banner {
+    user-select: none;
 }
 
-#categoryPage .banner  {
+#categoryTitle  {
+    background-color: lightblue;
     margin: 0;
+    padding: 5px;
+    pointer-events: none;
     width: 100%;
     margin-left: -18px;
-    pointer-events: none;
+    z-index: -100;
 }
   
 .statusNotTaken {
@@ -144,4 +167,19 @@
 
 .statusCompleted {
     color: darkgreen;
+}
+
+
+#classSearchButtonDiv button {
+    width: -webkit-fill-available;
+    padding: 5px;
+    margin: 10px;
+    background-color: aliceblue;
+    border-width: 1px;
+    font-size: 1.2em;
+}
+
+
+#classSearchButtonDiv button:hover:not([disabled]) {
+    background-color: lightblue;
 }
