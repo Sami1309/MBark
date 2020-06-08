@@ -1312,7 +1312,7 @@ const mBark = new class {
 					url = "https://www.lsa.umich.edu/cg/";
 					break;
 				case mBark.CourseCategories.kIntellectualBreadth:
-					url = "bulletin.engin.umich.edu/ug-ed/reqs/#subnav-11";
+					url = "https://bulletin.engin.umich.edu/ug-ed/reqs/#subnav-11";
 					break;
 				case mBark.CourseCategories.kIntellectualBreadth300:
 					url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&cgtype=ug&show=20&numlvl=300&numlvl=400&numlvl=500,600,700,800,900&dist=HU";
