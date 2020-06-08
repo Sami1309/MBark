@@ -1042,9 +1042,7 @@ const mBark = new class {
 		mBark.log("some example text")
 	}
 
-	UpdateLSASearch() {
-
-			// --TODO: CHECK FOR BUGS
+	/*UpdateLSASearch() {
 
 		var requiredCourses = document.getElementsByClassName("reqCourse");
 
@@ -1155,6 +1153,176 @@ const mBark = new class {
 		}
 
 		mBark.log("Init LSA Search");
+	}*/
+
+	UpdateLSASearch(str) {
+
+        str = str.split(" ");
+		// send out webrequest
+		var url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&show=1&department=" + str[0] + "&catalog=" + str[1],
+			xhttp = new XMLHttpRequest();
+
+		var lnk = "";
+
+		xhttp.onreadystatechange = function() {
+			if(this.readyState == XMLHttpRequest.DONE) {
+						
+				// request succeeded
+				if(this.status == 200) {
+							
+					// parse the http response into a separate document 
+					var responseDocument = document.implementation.createHTMLDocument("responeDocument");
+					responseDocument.write(this.responseText);
+
+					// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
+					//var elmt = responseDocument.getElementsByTagName("a");
+					var elmt = responseDocument.links;
+					for (var i = 0; i < elmt.length; i++) {
+						//mBark.log(elmt[i].href);
+						if (((elmt[i].href).search(str[0]+str[1])) != -1) {
+							lnk = elmt[i].href
+						}
+					}
+
+					xhttp.abort();
+							
+					Next();
+
+				} else {
+					mBark.log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
+				}
+			}
+		};
+		xhttp.open("GET", url, true);
+		xhttp.send();
+
+		function Next() {
+	        lnk = lnk.split("?");
+		// send out webrequest
+		//url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?content=2310"+clickedCourseName+"001",
+			//xhttp = new XMLHttpRequest();
+			url = "https://www.lsa.umich.edu/cg/cg_detail.aspx?"+lnk[lnk.length-1],
+				xhttp = new XMLHttpRequest();
+
+			xhttp.onreadystatechange = function() {
+				if(this.readyState == XMLHttpRequest.DONE) {
+						
+				// request succeeded
+					if(this.status == 200) {
+							
+					// parse the http response into a separate document 
+						var responseDocument = document.implementation.createHTMLDocument("responeDocument");
+						responseDocument.write(this.responseText);
+
+
+					// TODO: OZAN IMPLENT THIS WITH SOME COOL STUFF
+						var elmt = responseDocument.getElementById("contentMain_lblEnfPre"); //ERROR? this sometimes is null 
+					//var str = elmt.innerText;
+					//str = str.replace(/ /g,'');
+						mBark.log(elmt.innerText);
+						var cs = [];
+						elmt = elmt.innerText.split(" and ");
+						mBark.log(elmt.length);
+						for (var i = 0; i < elmt.length; ++i) {
+							//mBark.log("hi");
+							cs[cs.length] = elmt[i].split(" or ");
+
+						}
+					
+						mBark.log(cs);
+						for (var t1 = 0; t1 < cs.length; ++t1) {
+							var app = cs[t1];
+							for (var t2 = 0; t2 < app.length; ++t2) {
+								var myRe = /[A-Z]*[ ][0-9]{3}/g;
+								var myRe2 = /[0-9]{3}/g;
+								var myRe3 = /[A-Z]*/g;
+								//var myArray = myRe.exec('EECS 280 aksl fdlmk EECS 370 jsl;s');
+								//mBark.log(myArray);
+								
+								var tmp = myRe.exec(app[t2]) 
+								if (tmp == null) {
+									var tmp2 = myRe2.exec(app[t2]);
+									mBark.log(tmp2);
+									if (tmp2 != null && t2 != 0) {
+										var tmp3 = myRe3.exec(app[t2-1]);
+										mBark.log(tmp2[0]); mBark.log(tmp3[0]);
+										tmp2[0] = tmp3[0]+" "+tmp2[0];
+										//mBark.log(tmp2[0].concat(tmp3[0]));
+										app[t2] = tmp2;
+										mBark.log("hi");
+									}
+									else {
+										app[t2] = tmp;
+									}
+								}
+								else {
+									app[t2] = tmp;
+								}
+								
+								if (app[t2] != null) {
+									app[t2] = app[t2][0];
+								}
+								mBark.log(app[t2]);
+							}
+							var app2 = [];
+							var t4 = 0;
+							for (var t3 = 0; t3 < app.length; ++t3) {
+								if (app[t3] != null && app[t3] != str[0]+" "+str[1]) {
+									app2[t4] = app[t3];
+									++t4;
+								}
+							}
+							cs[t1] = app2;
+						}
+						mBark.log(cs);
+
+					} else {
+						mBark.log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
+					}
+				}
+			};
+			xhttp.open("GET", url, true);
+			xhttp.send();
+	    }
+
+	    mBark.log("Init LSA Search");
+
+	}
+
+	getClasses(query) {
+		var url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&show=2500";
+		for (var i = 0; i < query.length; ++i) {
+			var str = query[i].split(" ");
+			url = url + "&department=";
+			url = url + str[0] + "&catalog=" + str[1];
+		}
+		mBark.log(url);
+		// send out webrequest
+		var xhttp = new XMLHttpRequest();
+	
+		xhttp.onreadystatechange = function() {
+			if(this.readyState == XMLHttpRequest.DONE) {
+						
+				// request succeeded
+				if(this.status == 200) {
+							
+					// parse the http response into a separate document 
+					var responseDocument = document.implementation.createHTMLDocument("responeDocument");
+					responseDocument.write(this.responseText);
+
+					mBark.log(responseDocument);
+
+					xhttp.abort();
+							
+
+				} else {
+					mBark.log("Failed to get response for xhttp request '"+this.responseURL+"' status: "+this.status);
+				}
+			}
+		};
+		xhttp.open("GET", url, true);
+		xhttp.send();
+
 	}
 
 	InitMessgePump() {
@@ -1185,7 +1353,10 @@ const mBark = new class {
 	UpdateStudentDependencies() {
 		mBark.UpdateAuditInfo();
 		mBark.GenerateMainPage();
-		mBark.UpdateLSASearch();						
+		var str = "EECS 280"
+		mBark.UpdateLSASearch(str);		
+		var query = ["EECS 281","EECS 370"];
+		mBark.getClasses(query);				
 	}
 
 	UpdateAudit() {
