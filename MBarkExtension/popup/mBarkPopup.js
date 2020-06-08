@@ -1302,6 +1302,21 @@ const mBark = new class {
 				case mBark.CourseCategories.kHumanities:
 					url = url + '&dist=HU';
 					break;
+				case mBark.CourseCategories.kULCS:
+					url = "https://cse.engin.umich.edu/wp-content/uploads/sites/3/2019/05/18_19_cs_eng.pdf";
+					break;
+				case mBark.CourseCategories.kFlexTech:
+					url = "https://cse.engin.umich.edu/wp-content/uploads/sites/3/2019/05/18_19_cs_eng.pdf";
+					break;
+				case mBark.CourseCategories.kGenElective:
+					url = "https://www.lsa.umich.edu/cg/";
+					break;
+				case mBark.CourseCategories.kIntellectualBreadth:
+					url = "bulletin.engin.umich.edu/ug-ed/reqs/#subnav-11";
+					break;
+				case mBark.CourseCategories.kIntellectualBreadth300:
+					url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&cgtype=ug&show=20&numlvl=300&numlvl=400&numlvl=500,600,700,800,900&dist=HU";
+					break;
 				default:
 					var str = query[i].split(" ");
 					url = url + "&department=";
