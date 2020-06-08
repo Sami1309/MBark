@@ -1298,11 +1298,18 @@ const mBark = new class {
 	getClasses(query) {
 		var url = "https://www.lsa.umich.edu/cg/cg_results.aspx?termArray=f_20_2310&show=2500";
 		for (var i = 0; i < query.length; ++i) {
-			var str = query[i].split(" ");
-			url = url + "&department=";
-			url = url + str[0] + "&catalog=" + str[1];
+			switch(query[i]) {
+				case mBark.CourseCategories.kHumanities:
+					url = url + '&dist=HU';
+					break;
+				default:
+					var str = query[i].split(" ");
+					url = url + "&department=";
+					url = url + str[0] + "&catalog=" + str[1];
+			}
+
 		}
-		mBark.log(url);
+		return(url);
 	}
 
 	InitMessgePump() {
@@ -1334,9 +1341,7 @@ const mBark = new class {
 		mBark.UpdateAuditInfo();
 		mBark.GenerateMainPage();
 		var str = "EECS 280"
-		mBark.UpdateLSASearch(str);		
-		var query = ["EECS 281","EECS 370"];
-		mBark.getClasses(query);				
+		mBark.UpdateLSASearch(str);						
 	}
 
 	UpdateAudit() {
