@@ -60,20 +60,27 @@ const mBark = new class {
 		kBrowserId: 		"browser",
 		kCreditTableBodyId: "creditTableBody",
 
-		kAuditInfoId: 		"auditInfo",
-		kAuditNameId: 		"auditName",
-		kAuditDateId: 		"auditDate",
-		kAuditCTPId: 		"auditCTP",
-		kAuditCIPId: 		"auditCIP",
-		kAuditRefreshId: 	"auditRefresh",
+		kAuditInfoId: 				"auditInfo",
+		kAuditRefreshId: 			"auditRefresh",
+		kAuditNameId: 				"auditName",
+		kAuditDateId: 				"auditDate",
+		kAuditResCreditsId: 		"auditResidentCredits",
+		kAuditMajorResCreditsId:	"auditMajorResidentCredits",
+		kAuditCumulativeGPAId: 		"auditCumulativeGPA",
+		kAuditMajorGPAId: 			"auditMajorGPA",
+		kAuditCTPId: 				"auditCTP",
 
-		kMainPageId: 			"mainPage",
-		kCategoryPageId: 		"categoryPage",
-		kContentPageId: 		"content",
-		kClassTableBodyId: 		"classTableBody",
-		kCategoryTitleId: 		"categoryTitle",
-		kCategoryBackButtonId: 	"categoryBackButton",
+		kMainPageId: 				"mainPage",
+		kCategoryPageId: 			"categoryPage",
+		kContentPageId: 			"content",
+		kClassTableBodyId: 			"classTableBody",
+		kCategoryTitleId: 			"categoryTitle",
+		kCategoryBackButtonId: 		"categoryBackButton",
 		kClassSearchButtonDivId: 	"classSearchButtonDiv",
+
+		kStatusNotTakenClass: 		"statusNotTaken",
+		kStatusCompletedClass: 		"statusCompleted",
+		kStatusInProgressClass: 	"statusInProgress",
 
 		kAuditIframeName: "auditIframe",
 	};
@@ -83,9 +90,9 @@ const mBark = new class {
 
 	CourseStatusDomClass(status) {
 		switch(status) {
-			case mBark.CourseStatus.kNotTaken: return "statusNotTaken";
-			case mBark.CourseStatus.kCompleted: return "statusCompleted";
-			case mBark.CourseStatus.kInProgress: return "statusInProgress";
+			case mBark.CourseStatus.kNotTaken: 	 return mBark.Dom.kStatusNotTakenClass;
+			case mBark.CourseStatus.kCompleted:  return mBark.Dom.kStatusCompletedClass;
+			case mBark.CourseStatus.kInProgress: return mBark.Dom.kStatusInProgressClass;
 			default: return "";
 		}
 	} 
@@ -126,6 +133,17 @@ const mBark = new class {
 			this.hash = category;
 		}
 	}
+
+	// ---TODO: Pull these requirements from the audit in case they change
+	StudentRequirements = {
+		kCoreGPA: 2,
+		kCumulativeGPA: 2,
+
+		kCoreResidentCredit: 30,
+		kResidentCredit: 50,
+
+		kCreditsTowardsProgram: 128		
+	};
 
 	Student = class {
 
@@ -182,16 +200,6 @@ const mBark = new class {
 			return val; 
 		}
 
-		// ---TODO: Pull these requirements from the audit in case they change
-
-		CoreGPAMeet() {
-			return this.coreGPA >= 2;
-		}
-
-		CummulativeGPAMeet() {
-			return this.cumulativeGPA >= 2.0;
-		}
-
 		AddSearchCourse(course) {
 			this.searchCourses.push(course)
 		}
@@ -212,18 +220,6 @@ const mBark = new class {
 
 		ClearSearchCourses() {
 			this.searchCourses = []
-		}
-
-		ResidencyReqMeet() {
-			return residentCredits >= 50;
-		}
-
-		CSResidencyRequirementMeet() {
-			return this.coreResidentCredits >= 30;
-		}
-
-		CreditsTowardsProgramMeet() {
-			return this.creditsTowardProgram >= 128;
 		}
 
 		async ParsePDF(path, onComplete) {
@@ -399,11 +395,11 @@ const mBark = new class {
 								var course = student.courses[courseName];
 								if(!course) {
 
-									mBark.log("NOT Found: "+courseName);
+									// mBark.log("NOT Found: "+courseName);
 									break courseSearchLoop;
 								}
 
-								mBark.log("Found: "+courseName);
+								// mBark.log("Found: "+courseName);
 
 
 								// generate valid course that fulfill this course
@@ -491,6 +487,7 @@ const mBark = new class {
 							if(creditHeader.indexOf("Credits:") == -1) vCourse.status = mBark.CourseStatus.kCompleted;
 							else {
 
+
 								var creditField = fields[vOffset+1],
 									creditsCompletedAndInProgress = parseFloat(FindInStr(creditField, kCompleteAndProgressRegex));
 
@@ -498,6 +495,9 @@ const mBark = new class {
 								vOffset+= 2;
 							}
 
+							// mBark.log(vCourse.status);
+							// mBark.log(creditHeader);
+							
 							vCourse.credits = 0;
 							vCourse.creditsCompleted = 0;
 							vCourse.creditsInProgress = 0;
@@ -970,7 +970,7 @@ const mBark = new class {
 					break;
 
 					case mBark.CourseStatus.kCompleted: {
-						if(course.status == mBark.CourseStatus.kInProgress || mBark.CourseStatus.kNotTaken) {
+						if(course.status == mBark.CourseStatus.kInProgress || course.status == mBark.CourseStatus.kNotTaken) {
 							categories[category].status = mBark.CourseStatus.kInProgress;
 						} 
 					} break;
@@ -1015,16 +1015,34 @@ const mBark = new class {
 	}
 
 	UpdateAuditInfo() {
-		document.getElementById(mBark.Dom.kAuditNameId).innerText = mBark.gStudent.name; 
-		document.getElementById(mBark.Dom.kAuditDateId).innerText = mBark.gStudent.lastCourseAudit;
-		document.getElementById(mBark.Dom.kAuditCTPId).innerText = mBark.gStudent.creditsTowardProgram;
-		document.getElementById(mBark.Dom.kAuditCIPId).innerText = mBark.gStudent.creditsInProgress;
 
-		var refreshButton = document.getElementById(mBark.Dom.kAuditRefreshId);
-		refreshButton.addEventListener("click", function(e){
+		function RequirementSpan(val, req, digits = 0) {
+			var spanClass = val == 0 	? mBark.Dom.kStatusNotTakenClass :
+							val >= req 	? mBark.Dom.kStatusCompletedClass :
+										  mBark.Dom.kStatusInProgressClass;
+
+			return "<span class="+spanClass+">"+Number.parseFloat(val).toFixed(digits)+"/"+Number.parseFloat(req).toFixed(digits)+"</span>";
+		}
+
+		document.getElementById(mBark.Dom.kAuditNameId).innerHTML = mBark.gStudent.name; 
+		document.getElementById(mBark.Dom.kAuditDateId).innerHTML = mBark.gStudent.lastCourseAudit;
+		
+		document.getElementById(mBark.Dom.kAuditResCreditsId).innerHTML = RequirementSpan(mBark.gStudent.residentCredits, mBark.StudentRequirements.kResidentCredit);
+		document.getElementById(mBark.Dom.kAuditMajorResCreditsId).innerHTML = RequirementSpan(mBark.gStudent.coreResidentCredits, mBark.StudentRequirements.kCoreResidentCredit);
+
+		document.getElementById(mBark.Dom.kAuditCumulativeGPAId).innerHTML = RequirementSpan(mBark.gStudent.cumulativeGPA, mBark.StudentRequirements.kCumulativeGPA, 3);
+		document.getElementById(mBark.Dom.kAuditMajorGPAId).innerHTML = RequirementSpan(mBark.gStudent.coreGPA, mBark.StudentRequirements.kCoreGPA, 3);
+
+		document.getElementById(mBark.Dom.kAuditCTPId).innerHTML = RequirementSpan(mBark.gStudent.creditsTowardProgram, mBark.StudentRequirements.kCreditsTowardsProgram)+" ("+mBark.gStudent.creditsInProgress+" In Progress)";
+
+		// Note: replace the button with a clone so we don't keep adding event listeners
+		var refreshButton = document.getElementById(mBark.Dom.kAuditRefreshId),
+			refreshButtonClone = refreshButton.cloneNode(true);
+
+		refreshButtonClone.addEventListener("click", function(e){
 			mBark.UpdateAudit();
 		});
-
+		refreshButton.parentNode.replaceChild(refreshButtonClone, refreshButton);
 	}
 
 	DisplayText() {

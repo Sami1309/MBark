@@ -88,17 +88,50 @@
     cursor: pointer;
 }
 
-.auditRow {
-	display: flex;
-    place-content: center;
+.alignLeft {
+    text-align: left;
 }
 
-.auditRow p {
+.alignRight {
+    text-align: right;
+}
+
+.auditGroup {
+    display: grid;
+    grid-template-areas: "header header";
+    margin: 5px;
+
+}
+.auditGroup p {
+    margin: 0;
+    padding: 0 2.5px;
+}
+
+.auditGroupContent > *:first-child {
+    text-align: right;
+}
+
+.auditGroupContent > *:last-child {
+    text-align: left;
+}
+
+.auditGroup .auditGroupHeader {
+    grid-area: header;
+    border-bottom: 1px solid;
+}
+
+.auditRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auditRow > p {
 	margin: 0;
     padding: 0 2.5px;
 }
 
-.auditCol p {
+.auditCol > p {
     margin: 0 5px;
 }
 
@@ -162,7 +195,7 @@
 }
 
 .statusInProgress {
-    color: darkorange;
+    color: #e47d00; /*darker orange than darkorange*/
 }
 
 .statusCompleted {
@@ -182,4 +215,9 @@
 
 #classSearchButtonDiv button:hover:not([disabled]) {
     background-color: lightblue;
+}
+
+#classSearchButtonDiv button:active:not([disabled]) {
+    color: aliceblue;
+    background-color: cadetblue;
 }
