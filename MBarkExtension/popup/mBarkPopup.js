@@ -775,21 +775,15 @@ const mBark = new class {
 			mBark.GenerateMainPage();
 		});
 
+		// Make search button
+		var buttonDiv = document.getElementById(mBark.Dom.kClassSearchButtonDivId),
+			button = document.createElement("button");		
 
-		//generate checkboxes
+		// erase old button
+		buttonDiv.innerHTML = "";
 
-		//generate search button
-		var content = document.getElementById(mBark.Dom.kClassTableBodyId);
-		content.style.display = "";		
-		content.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th> <th>Select</th></tr>";
-
-
-		//TODO Make button search categories
-
-		var buttonText = "",
-			searchFn = undefined;
+		var buttonText = "", nonVirtualCategory = false;
 		switch(category) {
-
 			case mBark.CourseCategories.kULCS: {
 				buttonText = "Search ULCS";
 			} break;
@@ -814,59 +808,71 @@ const mBark = new class {
 
 			} break;
 
+			// Warn: we have to check for this so nonVirtualCategory stays false
+			case mBark.CourseCategories.kNotCounted: {
+				buttonText = "Search";
+			} break;
+
 			default: {
 				buttonText = "Search Classes";
+				nonVirtualCategory = true;
 			}			
 		}
 
-		var buttonDiv = document.getElementById(mBark.Dom.kClassSearchButtonDivId),
-			button = document.createElement("button");		
-		buttonDiv.innerHTML = "";
-
 		button.innerHTML = buttonText;
-		button.disabled = true;
+		button.disabled = nonVirtualCategory;
 
 		var searchHashes = [];
 		button.addEventListener("click", function(e) {
 
-			mBark.log(category);
-			mBark.log("Class hashes are ");
-			mBark.log(searchHashes);
+			var courseSearchStrs = [];
+			if(!nonVirtualCategory) courseSearchStrs.push(category);
+			else {
+			
+				mBark.log("Class hashes are ");
+				mBark.log(searchHashes);
 
-			var hashes = searchHashes,
-				courseSearchStrs = [];
 
-			// TODO: throw course.name into the mix too just in case student is searching In progress not-standard course [Ex eecs270 -> eecs280]
-			for(var i = 0; i < hashes.length; ++i) {
-				var hash = hashes[i],
-					courseDict = mBark.CourseHashToDictionary(hash),
-					courseList = Object.entries(courseDict);
+				// TODO: throw course.name into the mix too just in case student is searching In progress not-standard course [Ex eecs270 -> eecs280]
+				var hashes = searchHashes;
+				for(var i = 0; i < hashes.length; ++i) {
+					var hash = hashes[i],
+						courseDict = mBark.CourseHashToDictionary(hash),
+						courseList = Object.entries(courseDict);
 
-				// flaten course dict and merge with courseSearchStrs
-				for(var j = 0; j < courseList.length; ++j) {
-					var subject = courseList[j][0],
-						numbers = Object.entries(courseList[j][1]);
+					// flaten course dict and merge with courseSearchStrs
+					for(var j = 0; j < courseList.length; ++j) {
+						var subject = courseList[j][0],
+							numbers = Object.entries(courseList[j][1]);
 
-					for(var k = 0; k < numbers.length; ++k) {
-						courseSearchStrs.push(subject+" "+numbers[k][0]);
+						for(var k = 0; k < numbers.length; ++k) {
+							courseSearchStrs.push(subject+" "+numbers[k][0]);
+						}
 					}
 				}
 			}
-			
+
+			mBark.log(courseSearchStrs);
 			var url = mBark.getClasses(courseSearchStrs);
 			mBark.log(url);
 
-			// chrome.tabs.create({url: url, active: true}, function(e) {
-			// 	mBark.log(e);
-			// });
+			chrome.tabs.create({url: url, active: true}, function(e) {
+				mBark.log(e);
+			});
 		});
-		buttonDiv.appendChild(button);
+		if(category != mBark.CourseCategories.kNotCounted) {
+			buttonDiv.appendChild(button);
+		}
 
 
 		function updateButton() {
-			// TODO: don't disable category searches button
-			button.disabled = !searchHashes.length;
+			button.disabled = nonVirtualCategory && !searchHashes.length;
 		}
+
+		//generate checkboxes
+		var content = document.getElementById(mBark.Dom.kClassTableBodyId);
+		content.style.display = "";		
+		content.innerHTML = "<tr><th>Class</th> <th>Status</th> <th>Credits</th> <th>Select</th></tr>";
 
 		var courses = mBark.gStudent.GetCourses()
 		for(var i = 0; i < courses.length; ++i)
@@ -893,8 +899,7 @@ const mBark = new class {
 
 					input.type = 'checkbox';
 
-					// WARN: disabled for debugging
-					// input.disabled = courseArray[j].status == mBark.CourseStatus.kCompleted; 
+					input.disabled = !nonVirtualCategory || courseArray[j].status == mBark.CourseStatus.kCompleted;
 
 					input.setAttribute("courseHash", courseArray[j].hash);
 					input.addEventListener("click", function(e) {
